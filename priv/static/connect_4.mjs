@@ -2725,6 +2725,8 @@ var Move = class extends CustomType {
     this.column = column;
   }
 };
+var Restart = class extends CustomType {
+};
 function check_consecutive(bitboard, shift, iterations) {
   let final_board = (() => {
     let _pipe = range(0, iterations - 1);
@@ -2779,7 +2781,7 @@ function check_win(board2) {
     return bool3;
   });
 }
-function end_game(model) {
+function header(model) {
   let class$2 = (() => {
     let $ = model.state;
     if ($ instanceof Win) {
@@ -2813,8 +2815,14 @@ function end_game(model) {
     }
   })();
   return div(
-    toList([class$(class$2)]),
-    toList([text(text2)])
+    toList([class$("header " + class$2)]),
+    toList([
+      text(text2),
+      button(
+        toList([on_click(new Restart())]),
+        toList([text("restart")])
+      )
+    ])
   );
 }
 function convert_bitboard_to_set(bitboard) {
@@ -2873,7 +2881,7 @@ function move_picker(model) {
     throw makeError(
       "let_assert",
       "connect_4",
-      184,
+      195,
       "move_picker",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -2897,10 +2905,11 @@ function move_picker(model) {
       (i) => {
         return button(
           toList([
+            class$("drop-button"),
             on_click(new Move(i)),
             disabled(!contains(moves, i))
           ]),
-          toList([text(to_string(i))])
+          toList([text(" \u2B07 ")])
         );
       }
     );
@@ -2926,7 +2935,7 @@ function new$4(_) {
     );
   } else {
     let error = bitboard[0];
-    throw makeError("panic", "connect_4", 55, "new", error, {});
+    throw makeError("panic", "connect_4", 54, "new", error, {});
   }
 }
 function get_move(model, column) {
@@ -3009,67 +3018,72 @@ function get_move(model, column) {
   return move;
 }
 function update(model, msg) {
-  let $ = bitboard_or(model.active.board, model.inactive.board);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "connect_4",
-      113,
-      "update",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let full_board = $[0];
-  let moves = available_moves(full_board);
-  let is_legal = contains(moves, msg.column);
-  if (is_legal) {
-    let move = get_move(model, msg.column);
-    let $1 = bitboard_or(move, model.active.board);
-    if (!$1.isOk()) {
+  if (msg instanceof Move) {
+    let column = msg.column;
+    let $ = bitboard_or(model.active.board, model.inactive.board);
+    if (!$.isOk()) {
       throw makeError(
         "let_assert",
         "connect_4",
-        121,
+        115,
         "update",
         "Pattern match failed, no pattern matched the value.",
-        { value: $1 }
+        { value: $ }
       );
     }
-    let updated_board = $1[0];
-    let $2 = bitboard_or(updated_board, model.inactive.board);
-    if (!$2.isOk()) {
-      throw makeError(
-        "let_assert",
-        "connect_4",
-        122,
-        "update",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $2 }
-      );
-    }
-    let updated_full_board = $2[0];
-    let $3 = check_win(updated_board);
-    let $4 = size(available_moves(updated_full_board));
-    if ($3) {
-      let _record = model;
-      return new GameModel(
-        new TurnState(model.active.turn, updated_board),
-        _record.inactive,
-        new Win(model.active.turn)
-      );
-    } else if (!$3 && $4 === 0) {
-      let _record = model;
-      return new GameModel(_record.active, _record.inactive, new Draw());
+    let full_board = $[0];
+    let moves = available_moves(full_board);
+    let is_legal = contains(moves, column);
+    if (is_legal) {
+      let move = get_move(model, column);
+      let $1 = bitboard_or(move, model.active.board);
+      if (!$1.isOk()) {
+        throw makeError(
+          "let_assert",
+          "connect_4",
+          123,
+          "update",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $1 }
+        );
+      }
+      let updated_board = $1[0];
+      let $2 = bitboard_or(updated_board, model.inactive.board);
+      if (!$2.isOk()) {
+        throw makeError(
+          "let_assert",
+          "connect_4",
+          124,
+          "update",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $2 }
+        );
+      }
+      let updated_full_board = $2[0];
+      let $3 = check_win(updated_board);
+      let $4 = size(available_moves(updated_full_board));
+      if ($3) {
+        let _record = model;
+        return new GameModel(
+          new TurnState(model.active.turn, updated_board),
+          _record.inactive,
+          new Win(model.active.turn)
+        );
+      } else if (!$3 && $4 === 0) {
+        let _record = model;
+        return new GameModel(_record.active, _record.inactive, new Draw());
+      } else {
+        return new GameModel(
+          model.inactive,
+          new TurnState(model.active.turn, updated_board),
+          new Continue2()
+        );
+      }
     } else {
-      return new GameModel(
-        model.inactive,
-        new TurnState(model.active.turn, updated_board),
-        new Continue2()
-      );
+      return model;
     }
   } else {
-    return model;
+    return new$4(msg);
   }
 }
 function board(model) {
@@ -3103,7 +3117,7 @@ function board(model) {
                 toList([
                   div(
                     toList([class$("circle " + color)]),
-                    toList([text(to_string(cell_id))])
+                    toList([])
                   )
                 ])
               );
@@ -3119,7 +3133,7 @@ function board(model) {
 function game(model) {
   return div(
     toList([class$("game")]),
-    toList([end_game(model), move_picker(model), board(model)])
+    toList([header(model), move_picker(model), board(model)])
   );
 }
 function main() {
@@ -3129,7 +3143,7 @@ function main() {
     throw makeError(
       "let_assert",
       "connect_4",
-      19,
+      18,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

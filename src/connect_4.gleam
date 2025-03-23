@@ -1,4 +1,3 @@
-import gleam/int
 import gleam/list
 import gleam/set.{type Set}
 
@@ -60,6 +59,7 @@ fn new(_) -> GameModel {
 
 type GameMessage {
   Move(column: Int)
+  Restart
 }
 
 fn available_moves(full_board: b.Bitboard) -> Set(Int) {
@@ -110,38 +110,46 @@ fn check_win(board: b.Bitboard) -> Bool {
 }
 
 fn update(model: GameModel, msg: GameMessage) -> GameModel {
-  let assert Ok(full_board) =
-    b.bitboard_or(model.active.board, model.inactive.board)
+  case msg {
+    Move(column) -> {
+      let assert Ok(full_board) =
+        b.bitboard_or(model.active.board, model.inactive.board)
 
-  let moves = available_moves(full_board)
-  let is_legal = set.contains(moves, msg.column)
-  case is_legal {
-    True -> {
-      let move = get_move(model, msg.column)
-      let assert Ok(updated_board) = b.bitboard_or(move, model.active.board)
-      let assert Ok(updated_full_board) =
-        b.bitboard_or(updated_board, model.inactive.board)
+      let moves = available_moves(full_board)
+      let is_legal = set.contains(moves, column)
+      case is_legal {
+        True -> {
+          let move = get_move(model, column)
+          let assert Ok(updated_board) = b.bitboard_or(move, model.active.board)
+          let assert Ok(updated_full_board) =
+            b.bitboard_or(updated_board, model.inactive.board)
 
-      case
-        check_win(updated_board),
-        set.size(available_moves(updated_full_board))
-      {
-        True, _ ->
-          GameModel(
-            ..model,
-            active: TurnState(turn: model.active.turn, board: updated_board),
-            state: Win(model.active.turn),
-          )
-        False, 0 -> GameModel(..model, state: Draw)
-        False, _ ->
-          GameModel(
-            active: model.inactive,
-            inactive: TurnState(turn: model.active.turn, board: updated_board),
-            state: Continue,
-          )
+          case
+            check_win(updated_board),
+            set.size(available_moves(updated_full_board))
+          {
+            True, _ ->
+              GameModel(
+                ..model,
+                active: TurnState(turn: model.active.turn, board: updated_board),
+                state: Win(model.active.turn),
+              )
+            False, 0 -> GameModel(..model, state: Draw)
+            False, _ ->
+              GameModel(
+                active: model.inactive,
+                inactive: TurnState(
+                  turn: model.active.turn,
+                  board: updated_board,
+                ),
+                state: Continue,
+              )
+          }
+        }
+        False -> model
       }
     }
-    False -> model
+    Restart -> new(msg)
   }
 }
 
@@ -149,13 +157,13 @@ fn update(model: GameModel, msg: GameMessage) -> GameModel {
 
 fn game(model: GameModel) -> element.Element(_) {
   html.div([attribute.class("game")], [
-    end_game(model),
+    header(model),
     move_picker(model),
     board(model),
   ])
 }
 
-fn end_game(model: GameModel) -> element.Element(_) {
+fn header(model: GameModel) -> element.Element(_) {
   let class = case model.state {
     Win(_) -> "win"
     Draw -> "draw"
@@ -177,7 +185,10 @@ fn end_game(model: GameModel) -> element.Element(_) {
         X -> "Red's turn"
       }
   }
-  html.div([attribute.class(class)], [element.text(text)])
+  html.div([attribute.class("header" <> " " <> class)], [
+    element.text(text),
+    html.button([event.on_click(Restart)], [element.text("restart")]),
+  ])
 }
 
 fn move_picker(model: GameModel) -> element.Element(_) {
@@ -193,8 +204,12 @@ fn move_picker(model: GameModel) -> element.Element(_) {
     list.range(0, connect_4_width - 1)
     |> list.map(fn(i) {
       html.button(
-        [event.on_click(Move(i)), attribute.disabled(!set.contains(moves, i))],
-        [element.text(int.to_string(i))],
+        [
+          attribute.class("drop-button"),
+          event.on_click(Move(i)),
+          attribute.disabled(!set.contains(moves, i)),
+        ],
+        [element.text(" ⬇ ")],
       )
     })
 
@@ -238,9 +253,7 @@ fn board(model: GameModel) -> element.Element(_) {
             _, _ -> "white"
           }
           html.div([attribute.class("cell")], [
-            html.div([attribute.class("circle" <> " " <> color)], [
-              element.text(int.to_string(cell_id)),
-            ]),
+            html.div([attribute.class("circle" <> " " <> color)], []),
           ])
         })
       list.append(cells, row)
