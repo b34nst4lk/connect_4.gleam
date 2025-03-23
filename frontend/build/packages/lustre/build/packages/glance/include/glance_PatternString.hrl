@@ -1,0 +1,1 @@
+-record(pattern_string, {value :: binary()}).

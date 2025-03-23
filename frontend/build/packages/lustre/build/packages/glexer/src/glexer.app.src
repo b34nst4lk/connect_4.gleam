@@ -1,0 +1,9 @@
+{application, glexer, [
+    {vsn, "2.1.0"},
+    {applications, [gleam_stdlib]},
+    {description, "A lexer for Gleam source code"},
+    {modules, [glexer,
+               glexer@internal@predicates,
+               glexer@token]},
+    {registered, []}
+]}.

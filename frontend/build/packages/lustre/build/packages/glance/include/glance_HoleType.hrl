@@ -1,0 +1,1 @@
+-record(hole_type, {name :: binary()}).

@@ -1,0 +1,1 @@
+-record(pattern_tuple, {elems :: list(glance:pattern())}).

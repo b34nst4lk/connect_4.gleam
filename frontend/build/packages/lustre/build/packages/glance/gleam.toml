@@ -1,0 +1,19 @@
+name = "glance"
+version = "2.0.1"
+description = "A Gleam source code parser, in Gleam!"
+gleam = ">= 1.4.0"
+
+licences = ["Apache-2.0"]
+repository = { type = "github", user = "lpil", repo = "glance" }
+links = [
+  { title = "Website", href = "https://gleam.run" },
+  { title = "Sponsor", href = "https://github.com/sponsors/lpil" },
+]
+
+[dependencies]
+gleam_stdlib = ">= 0.28.0 and < 2.0.0"
+glexer = ">= 2.0.0 and < 3.0.0"
+
+[dev-dependencies]
+gleeunit = "~> 1.0"
+simplifile = "~> 1.0"

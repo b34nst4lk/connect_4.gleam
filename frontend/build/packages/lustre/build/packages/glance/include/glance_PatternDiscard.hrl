@@ -1,0 +1,1 @@
+-record(pattern_discard, {name :: binary()}).

@@ -1,0 +1,1 @@
+-record(variable_type, {name :: binary()}).

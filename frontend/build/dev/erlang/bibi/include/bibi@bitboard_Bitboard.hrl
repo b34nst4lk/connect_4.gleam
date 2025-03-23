@@ -1,0 +1,1 @@
+-record(bitboard, {width :: integer(), height :: integer(), val :: integer()}).
