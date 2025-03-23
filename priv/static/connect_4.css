@@ -1,0 +1,31 @@
+.board {
+    display: grid;
+    grid-template-columns: repeat(7, auto);
+}
+
+.cell {
+    aspect-ratio: 1/1;
+    background-color: blue;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+.circle {
+    width: 80%;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.red {
+    background-color: red;
+}
+
+.yellow {
+    background-color: yellow;
+}
+
+.white {
+    background-color: white;
+}
