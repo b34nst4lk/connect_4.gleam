@@ -1,1 +1,0 @@
--record(coords, {x :: integer(), y :: integer()}).

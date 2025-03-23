@@ -1,1 +1,0 @@
--record(pattern_variable, {name :: binary()}).

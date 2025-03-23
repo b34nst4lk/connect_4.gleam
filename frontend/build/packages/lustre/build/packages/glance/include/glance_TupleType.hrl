@@ -1,1 +1,0 @@
--record(tuple_type, {elements :: list(glance:type())}).

@@ -1,1 +1,0 @@
--record(pattern_float, {value :: binary()}).

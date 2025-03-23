@@ -1,1 +1,0 @@
--record(field_access, {container :: glance:expression(), label :: binary()}).

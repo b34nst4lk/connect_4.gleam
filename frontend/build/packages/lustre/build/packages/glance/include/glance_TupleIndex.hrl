@@ -1,1 +1,0 @@
--record(tuple_index, {tuple :: glance:expression(), index :: integer()}).

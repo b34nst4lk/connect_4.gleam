@@ -1,1 +1,0 @@
--record(pattern_int, {value :: binary()}).
