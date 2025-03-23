@@ -28,19 +28,32 @@ type Turn {
   O
 }
 
-type State {
+type TurnState {
+  TurnState(turn: Turn, board: b.Bitboard)
+}
+
+type GameState {
   Win(t: Turn)
   Draw
   Continue
 }
 
 type GameModel {
-  GameModel(x: b.Bitboard, o: b.Bitboard, active: Turn, state: State)
+  GameModel(active: TurnState, inactive: TurnState, state: GameState)
 }
 
 fn new(_) -> GameModel {
-  let assert Ok(bitboard) = b.new(connect_4_width, connect_4_height)
-  GameModel(bitboard, bitboard, X, Continue)
+  let bitboard = b.new(connect_4_width, connect_4_height)
+  case bitboard {
+    Ok(board) ->
+      GameModel(
+        active: TurnState(X, board),
+        inactive: TurnState(O, board),
+        state: Continue,
+      )
+    // This should never happen unless the connect_4 width and heights are wrongly configured
+    Error(error) -> panic as error
+  }
 }
 
 //  message
@@ -49,8 +62,7 @@ type GameMessage {
   Move(column: Int)
 }
 
-fn available_moves(model: GameModel) -> Set(Int) {
-  let assert Ok(full_board) = b.bitboard_or(model.x, model.o)
+fn available_moves(full_board: b.Bitboard) -> Set(Int) {
   list.range(0, connect_4_width - 1)
   |> list.fold(set.new(), fn(moves, i) {
     let assert Ok(mask) = b.file(full_board, i)
@@ -66,7 +78,8 @@ type MoveBitboard =
   b.Bitboard
 
 fn get_move(model: GameModel, column: Int) -> MoveBitboard {
-  let assert Ok(full_board) = b.bitboard_or(model.x, model.o)
+  let assert Ok(full_board) =
+    b.bitboard_or(model.active.board, model.inactive.board)
   let assert Ok(mask) = b.file(full_board, column)
   let assert Ok(col) = b.bitboard_and(full_board, mask)
   let assert Ok(empty_slots) = b.bitboard_xor(col, mask)
@@ -97,36 +110,35 @@ fn check_win(board: b.Bitboard) -> Bool {
 }
 
 fn update(model: GameModel, msg: GameMessage) -> GameModel {
-  let moves = available_moves(model)
+  let assert Ok(full_board) =
+    b.bitboard_or(model.active.board, model.inactive.board)
+
+  let moves = available_moves(full_board)
   let is_legal = set.contains(moves, msg.column)
   case is_legal {
     True -> {
       let move = get_move(model, msg.column)
-      let updated_game = case model.active {
-        X -> {
-          let assert Ok(updated_board) = b.bitboard_or(move, model.x)
-          let winner = case check_win(updated_board) {
-            True -> Win(X)
-            False -> Continue
-          }
-          GameModel(..model, x: updated_board, active: O, state: winner)
-        }
-        O -> {
-          let assert Ok(updated_board) = b.bitboard_or(move, model.o)
-          let state = case check_win(updated_board) {
-            True -> Win(O)
-            False -> Continue
-          }
-          GameModel(..model, o: updated_board, active: X, state: state)
-        }
-      }
-      case updated_game.state {
-        Win(_) -> updated_game
-        _ ->
-          case set.size(available_moves(updated_game)) {
-            0 -> GameModel(..updated_game, state: Draw)
-            _ -> updated_game
-          }
+      let assert Ok(updated_board) = b.bitboard_or(move, model.active.board)
+      let assert Ok(updated_full_board) =
+        b.bitboard_or(updated_board, model.inactive.board)
+
+      case
+        check_win(updated_board),
+        set.size(available_moves(updated_full_board))
+      {
+        True, _ ->
+          GameModel(
+            ..model,
+            active: TurnState(turn: model.active.turn, board: updated_board),
+            state: Win(model.active.turn),
+          )
+        False, 0 -> GameModel(..model, state: Draw)
+        False, _ ->
+          GameModel(
+            active: model.inactive,
+            inactive: TurnState(turn: model.active.turn, board: updated_board),
+            state: Continue,
+          )
       }
     }
     False -> model
@@ -160,7 +172,7 @@ fn end_game(model: GameModel) -> element.Element(_) {
       }
     Draw -> "Draw"
     Continue ->
-      case model.active {
+      case model.active.turn {
         O -> "Yellow's turn"
         X -> "Red's turn"
       }
@@ -169,10 +181,12 @@ fn end_game(model: GameModel) -> element.Element(_) {
 }
 
 fn move_picker(model: GameModel) -> element.Element(_) {
+  let assert Ok(full_board) =
+    b.bitboard_or(model.active.board, model.inactive.board)
   let moves = case model.state {
     Win(_) -> set.new()
     Draw -> set.new()
-    _ -> available_moves(model)
+    _ -> available_moves(full_board)
   }
 
   let buttons =
@@ -198,9 +212,16 @@ fn convert_bitboard_to_set(bitboard: b.Bitboard) {
   set.from_list(b.to_squares(bitboard))
 }
 
+fn turn_to_color(t: Turn) -> String {
+  case t {
+    X -> "red"
+    O -> "yellow"
+  }
+}
+
 fn board(model: GameModel) -> element.Element(_) {
-  let x = convert_bitboard_to_set(model.x)
-  let o = convert_bitboard_to_set(model.o)
+  let active_board = convert_bitboard_to_set(model.active.board)
+  let inactive_board = convert_bitboard_to_set(model.inactive.board)
   let board_rows =
     list.range(connect_4_height - 1, 0)
     |> list.fold([], fn(cells, i) {
@@ -208,9 +229,12 @@ fn board(model: GameModel) -> element.Element(_) {
         list.range(0, connect_4_width - 1)
         |> list.map(fn(j) {
           let cell_id = i * connect_4_width + j
-          let color = case set.contains(x, cell_id), set.contains(o, cell_id) {
-            True, False -> "red"
-            False, True -> "yellow"
+          let color = case
+            set.contains(active_board, cell_id),
+            set.contains(inactive_board, cell_id)
+          {
+            True, False -> turn_to_color(model.active.turn)
+            False, True -> turn_to_color(model.inactive.turn)
             _, _ -> "white"
           }
           html.div([attribute.class("cell")], [

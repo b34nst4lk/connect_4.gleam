@@ -2694,6 +2694,13 @@ var X = class extends CustomType {
 };
 var O = class extends CustomType {
 };
+var TurnState = class extends CustomType {
+  constructor(turn, board2) {
+    super();
+    this.turn = turn;
+    this.board = board2;
+  }
+};
 var Win = class extends CustomType {
   constructor(t) {
     super();
@@ -2705,11 +2712,10 @@ var Draw = class extends CustomType {
 var Continue2 = class extends CustomType {
 };
 var GameModel = class extends CustomType {
-  constructor(x, o, active, state) {
+  constructor(active, inactive, state) {
     super();
-    this.x = x;
-    this.o = o;
     this.active = active;
+    this.inactive = inactive;
     this.state = state;
   }
 };
@@ -2731,7 +2737,7 @@ function check_consecutive(bitboard, shift, iterations) {
           throw makeError(
             "let_assert",
             "connect_4",
-            86,
+            99,
             "",
             "Pattern match failed, no pattern matched the value.",
             { value: $ }
@@ -2743,7 +2749,7 @@ function check_consecutive(bitboard, shift, iterations) {
           throw makeError(
             "let_assert",
             "connect_4",
-            87,
+            100,
             "",
             "Pattern match failed, no pattern matched the value.",
             { value: $1 }
@@ -2798,7 +2804,7 @@ function end_game(model) {
     } else if ($ instanceof Draw) {
       return "Draw";
     } else {
-      let $1 = model.active;
+      let $1 = model.active.turn;
       if ($1 instanceof O) {
         return "Yellow's turn";
       } else {
@@ -2814,51 +2820,46 @@ function end_game(model) {
 function convert_bitboard_to_set(bitboard) {
   return from_list2(to_squares(bitboard));
 }
-var connect_4_width = 7;
-function available_moves(model) {
-  let $ = bitboard_or(model.x, model.o);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "connect_4",
-      53,
-      "available_moves",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
+function turn_to_color(t) {
+  if (t instanceof X) {
+    return "red";
+  } else {
+    return "yellow";
   }
-  let full_board = $[0];
+}
+var connect_4_width = 7;
+function available_moves(full_board) {
   let _pipe = range(0, connect_4_width - 1);
   return fold(
     _pipe,
     new$2(),
     (moves, i) => {
-      let $1 = file(full_board, i);
+      let $ = file(full_board, i);
+      if (!$.isOk()) {
+        throw makeError(
+          "let_assert",
+          "connect_4",
+          68,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $ }
+        );
+      }
+      let mask2 = $[0];
+      let $1 = bitboard_and(mask2, full_board);
       if (!$1.isOk()) {
         throw makeError(
           "let_assert",
           "connect_4",
-          56,
+          69,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: $1 }
         );
       }
-      let mask2 = $1[0];
-      let $2 = bitboard_and(mask2, full_board);
-      if (!$2.isOk()) {
-        throw makeError(
-          "let_assert",
-          "connect_4",
-          57,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: $2 }
-        );
-      }
-      let file2 = $2[0];
-      let $3 = isEqual(mask2, file2);
-      if ($3) {
+      let file2 = $1[0];
+      let $2 = isEqual(mask2, file2);
+      if ($2) {
         return moves;
       } else {
         return insert2(moves, i);
@@ -2867,14 +2868,26 @@ function available_moves(model) {
   );
 }
 function move_picker(model) {
+  let $ = bitboard_or(model.active.board, model.inactive.board);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "connect_4",
+      184,
+      "move_picker",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let full_board = $[0];
   let moves = (() => {
-    let $ = model.state;
-    if ($ instanceof Win) {
+    let $1 = model.state;
+    if ($1 instanceof Win) {
       return new$2();
-    } else if ($ instanceof Draw) {
+    } else if ($1 instanceof Draw) {
       return new$2();
     } else {
-      return available_moves(model);
+      return available_moves(full_board);
     }
   })();
   let buttons = (() => {
@@ -2903,27 +2916,26 @@ function move_picker(model) {
 }
 var connect_4_height = 6;
 function new$4(_) {
-  let $ = new$(connect_4_width, connect_4_height);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "connect_4",
-      42,
-      "new",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
+  let bitboard = new$(connect_4_width, connect_4_height);
+  if (bitboard.isOk()) {
+    let board$1 = bitboard[0];
+    return new GameModel(
+      new TurnState(new X(), board$1),
+      new TurnState(new O(), board$1),
+      new Continue2()
     );
+  } else {
+    let error = bitboard[0];
+    throw makeError("panic", "connect_4", 55, "new", error, {});
   }
-  let bitboard = $[0];
-  return new GameModel(bitboard, bitboard, new X(), new Continue2());
 }
 function get_move(model, column) {
-  let $ = bitboard_or(model.x, model.o);
+  let $ = bitboard_or(model.active.board, model.inactive.board);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "connect_4",
-      69,
+      81,
       "get_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -2935,7 +2947,7 @@ function get_move(model, column) {
     throw makeError(
       "let_assert",
       "connect_4",
-      70,
+      83,
       "get_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $1 }
@@ -2947,7 +2959,7 @@ function get_move(model, column) {
     throw makeError(
       "let_assert",
       "connect_4",
-      71,
+      84,
       "get_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $2 }
@@ -2959,7 +2971,7 @@ function get_move(model, column) {
     throw makeError(
       "let_assert",
       "connect_4",
-      72,
+      85,
       "get_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $3 }
@@ -2975,7 +2987,7 @@ function get_move(model, column) {
     throw makeError(
       "let_assert",
       "connect_4",
-      73,
+      86,
       "get_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $4 }
@@ -2987,7 +2999,7 @@ function get_move(model, column) {
     throw makeError(
       "let_assert",
       "connect_4",
-      74,
+      87,
       "get_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $5 }
@@ -2997,79 +3009,72 @@ function get_move(model, column) {
   return move;
 }
 function update(model, msg) {
-  let moves = available_moves(model);
+  let $ = bitboard_or(model.active.board, model.inactive.board);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "connect_4",
+      113,
+      "update",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let full_board = $[0];
+  let moves = available_moves(full_board);
   let is_legal = contains(moves, msg.column);
   if (is_legal) {
     let move = get_move(model, msg.column);
-    let updated_game = (() => {
-      let $2 = model.active;
-      if ($2 instanceof X) {
-        let $1 = bitboard_or(move, model.x);
-        if (!$1.isOk()) {
-          throw makeError(
-            "let_assert",
-            "connect_4",
-            107,
-            "update",
-            "Pattern match failed, no pattern matched the value.",
-            { value: $1 }
-          );
-        }
-        let updated_board = $1[0];
-        let winner = (() => {
-          let $22 = check_win(updated_board);
-          if ($22) {
-            return new Win(new X());
-          } else {
-            return new Continue2();
-          }
-        })();
-        let _record = model;
-        return new GameModel(updated_board, _record.o, new O(), winner);
-      } else {
-        let $1 = bitboard_or(move, model.o);
-        if (!$1.isOk()) {
-          throw makeError(
-            "let_assert",
-            "connect_4",
-            115,
-            "update",
-            "Pattern match failed, no pattern matched the value.",
-            { value: $1 }
-          );
-        }
-        let updated_board = $1[0];
-        let state = (() => {
-          let $22 = check_win(updated_board);
-          if ($22) {
-            return new Win(new O());
-          } else {
-            return new Continue2();
-          }
-        })();
-        let _record = model;
-        return new GameModel(_record.x, updated_board, new X(), state);
-      }
-    })();
-    let $ = updated_game.state;
-    if ($ instanceof Win) {
-      return updated_game;
+    let $1 = bitboard_or(move, model.active.board);
+    if (!$1.isOk()) {
+      throw makeError(
+        "let_assert",
+        "connect_4",
+        121,
+        "update",
+        "Pattern match failed, no pattern matched the value.",
+        { value: $1 }
+      );
+    }
+    let updated_board = $1[0];
+    let $2 = bitboard_or(updated_board, model.inactive.board);
+    if (!$2.isOk()) {
+      throw makeError(
+        "let_assert",
+        "connect_4",
+        122,
+        "update",
+        "Pattern match failed, no pattern matched the value.",
+        { value: $2 }
+      );
+    }
+    let updated_full_board = $2[0];
+    let $3 = check_win(updated_board);
+    let $4 = size(available_moves(updated_full_board));
+    if ($3) {
+      let _record = model;
+      return new GameModel(
+        new TurnState(model.active.turn, updated_board),
+        _record.inactive,
+        new Win(model.active.turn)
+      );
+    } else if (!$3 && $4 === 0) {
+      let _record = model;
+      return new GameModel(_record.active, _record.inactive, new Draw());
     } else {
-      let $1 = size(available_moves(updated_game));
-      if ($1 === 0) {
-        let _record = updated_game;
-        return new GameModel(_record.x, _record.o, _record.active, new Draw());
-      } else {
-        return updated_game;
-      }
+      return new GameModel(
+        model.inactive,
+        new TurnState(model.active.turn, updated_board),
+        new Continue2()
+      );
     }
   } else {
     return model;
   }
 }
 function board(model) {
-  let x = convert_bitboard_to_set(model.x);
-  let o = convert_bitboard_to_set(model.o);
+  let active_board = convert_bitboard_to_set(model.active.board);
+  let inactive_board = convert_bitboard_to_set(model.inactive.board);
   let board_rows = (() => {
     let _pipe = range(connect_4_height - 1, 0);
     return fold(
@@ -3083,12 +3088,12 @@ function board(model) {
             (j) => {
               let cell_id = i * connect_4_width + j;
               let color = (() => {
-                let $ = contains(x, cell_id);
-                let $1 = contains(o, cell_id);
+                let $ = contains(active_board, cell_id);
+                let $1 = contains(inactive_board, cell_id);
                 if ($ && !$1) {
-                  return "red";
+                  return turn_to_color(model.active.turn);
                 } else if (!$ && $1) {
-                  return "yellow";
+                  return turn_to_color(model.inactive.turn);
                 } else {
                   return "white";
                 }
