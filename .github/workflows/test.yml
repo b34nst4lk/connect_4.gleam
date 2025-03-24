@@ -21,3 +21,6 @@ jobs:
       - run: cd frontend && gleam deps download
       - run: cd frontend && gleam test
       - run: cd frontend && gleam format --check src test
+      - run: cd backend && gleam deps download
+      - run: cd backend && gleam test
+      - run: cd backend && gleam format --check src test
