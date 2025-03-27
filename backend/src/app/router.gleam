@@ -32,7 +32,13 @@ pub fn handle_request(req: Request) -> Response {
   case req.method, wisp.path_segments(req) {
     Get, ["ping"] ->
       wisp.json_response(json.to_string_tree(json.string("pong")), 200)
-    Post, ["move"] -> handle_move(req)
+    Post, ["move"] -> handle_move(req, 5)
+    Post, ["minimax", depth] -> {
+      case int.parse(depth) {
+        Ok(parsed) -> handle_move(req, parsed)
+        Error(_) -> wisp.not_found()
+      }
+    }
     Options, ["move"] ->
       wisp.json_response(json.to_string_tree(json.string("pong")), 200)
     _, _ -> wisp.not_found()
@@ -74,10 +80,10 @@ pub fn game_model_decoder() -> decode.Decoder(Game) {
   }
 }
 
-fn handle_move(req: Request) -> Response {
+fn handle_move(req: Request, depth: Int) -> Response {
   use req_body <- wisp.require_json(req)
   let assert Ok(game) = decode.run(req_body, game_model_decoder())
-  let move = minimax(game, 5)
+  let move = minimax(game, depth)
 
   let resp_body =
     [#("move", json.int(move))] |> json.object |> json.to_string_tree
