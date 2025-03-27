@@ -5308,12 +5308,43 @@ function expect_json(decoder, to_msg) {
   );
 }
 
-// build/dev/javascript/connect_4/messages.mjs
+// build/dev/javascript/connect_4/models.mjs
+var DebugLog = class extends CustomType {
+  constructor(move_count, turn, state) {
+    super();
+    this.move_count = move_count;
+    this.turn = turn;
+    this.state = state;
+  }
+};
+var Human = class extends CustomType {
+};
+var AI = class extends CustomType {
+};
+var PlayerTypes = class extends CustomType {
+  constructor(red, yellow) {
+    super();
+    this.red = red;
+    this.yellow = yellow;
+  }
+};
+var GameModel = class extends CustomType {
+  constructor(game, player_types, move_counter, move_history, highlight_column) {
+    super();
+    this.game = game;
+    this.player_types = player_types;
+    this.move_counter = move_counter;
+    this.move_history = move_history;
+    this.highlight_column = highlight_column;
+  }
+};
 var GotoMainMenu = class extends CustomType {
 };
 var NewGame = class extends CustomType {
-};
-var NewOnlineGame = class extends CustomType {
+  constructor(player_types) {
+    super();
+    this.player_types = player_types;
+  }
 };
 var Move = class extends CustomType {
   constructor(column) {
@@ -5335,6 +5366,39 @@ var HighlightColumn = class extends CustomType {
 };
 var UnhighlightColumn = class extends CustomType {
 };
+function get_active_player_type(model) {
+  let $ = model.game.active.turn;
+  if ($ instanceof Red) {
+    return model.player_types.red;
+  } else {
+    return model.player_types.yellow;
+  }
+}
+function new_game(red, yellow) {
+  let $ = new$3(connect_4_width, connect_4_height);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "models",
+      43,
+      "new_game",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let bitboard = $[0];
+  return new GameModel(
+    new Game(
+      new Player(new Red(), bitboard),
+      new Player(new Yellow(), bitboard),
+      new Continue2()
+    ),
+    new PlayerTypes(red, yellow),
+    0,
+    new_map(),
+    -1
+  );
+}
 
 // build/dev/javascript/lustre/lustre/element/html.mjs
 function h1(attrs, children2) {
@@ -5374,68 +5438,6 @@ function on_mouse_over(msg) {
 }
 
 // build/dev/javascript/connect_4/views/game.mjs
-var DebugLog = class extends CustomType {
-  constructor(move_count, turn, state) {
-    super();
-    this.move_count = move_count;
-    this.turn = turn;
-    this.state = state;
-  }
-};
-var Human = class extends CustomType {
-};
-var AI = class extends CustomType {
-};
-var PlayerTypes = class extends CustomType {
-  constructor(red, yellow) {
-    super();
-    this.red = red;
-    this.yellow = yellow;
-  }
-};
-var Model2 = class extends CustomType {
-  constructor(game, player_types, move_counter, move_history, highlight_column) {
-    super();
-    this.game = game;
-    this.player_types = player_types;
-    this.move_counter = move_counter;
-    this.move_history = move_history;
-    this.highlight_column = highlight_column;
-  }
-};
-function get_active_player_type(model) {
-  let $ = model.game.active.turn;
-  if ($ instanceof Red) {
-    return model.player_types.red;
-  } else {
-    return model.player_types.yellow;
-  }
-}
-function new$4(red, yellow) {
-  let $ = new$3(connect_4_width, connect_4_height);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "views/game",
-      56,
-      "new",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let bitboard = $[0];
-  return new Model2(
-    new Game(
-      new Player(new Red(), bitboard),
-      new Player(new Yellow(), bitboard),
-      new Continue2()
-    ),
-    new PlayerTypes(red, yellow),
-    0,
-    new_map(),
-    -1
-  );
-}
 function get_move_api(model) {
   let url = "http://localhost:8000/move";
   let req_body = (() => {
@@ -5482,7 +5484,7 @@ function update_model(model, column) {
   let has_game_changed = !isEqual(updated_game, model.game);
   if (has_game_changed) {
     let _record = model;
-    return new Model2(
+    return new GameModel(
       updated_game,
       _record.player_types,
       model.move_counter + 1,
@@ -5503,7 +5505,7 @@ function update_model(model, column) {
 }
 function update_highlighted_column(model, column) {
   let _record = model;
-  return new Model2(
+  return new GameModel(
     _record.game,
     _record.player_types,
     _record.move_counter,
@@ -5513,7 +5515,7 @@ function update_highlighted_column(model, column) {
 }
 function update_clear_highlighted_column(model) {
   let _record = model;
-  return new Model2(
+  return new GameModel(
     _record.game,
     _record.player_types,
     _record.move_counter,
@@ -5562,7 +5564,7 @@ function header(model) {
         toList([]),
         toList([
           button(
-            toList([on_click(new NewOnlineGame())]),
+            toList([on_click(new NewGame(model.player_types))]),
             toList([text("Restart")])
           ),
           button(
@@ -5728,21 +5730,28 @@ function view(model) {
 // build/dev/javascript/connect_4/views/main_menu.mjs
 function view2() {
   return div(
-    toList([]),
+    toList([class$("stack")]),
     toList([
-      h1(
-        toList([]),
+      h1(toList([]), toList([text("CONNECT 4 LOL")])),
+      button(
         toList([
-          text("CONNECT 4 LOL"),
-          button(
-            toList([on_click(new NewGame())]),
-            toList([text("Play locally")])
-          ),
-          button(
-            toList([on_click(new NewOnlineGame())]),
-            toList([text("VS AI")])
+          on_click(
+            new NewGame(new PlayerTypes(new Human(), new Human()))
           )
-        ])
+        ]),
+        toList([text("Play locally")])
+      ),
+      button(
+        toList([
+          on_click(new NewGame(new PlayerTypes(new Human(), new AI())))
+        ]),
+        toList([text("VS AI")])
+      ),
+      button(
+        toList([
+          on_click(new NewGame(new PlayerTypes(new AI(), new AI())))
+        ]),
+        toList([text("AI VS AI")])
       )
     ])
   );
@@ -5757,24 +5766,34 @@ var Game2 = class extends CustomType {
     this.model = model;
   }
 };
-function new$5(message) {
+function new$4(message) {
   if (message instanceof GotoMainMenu) {
     return [new MainMenu(), none()];
   } else if (message instanceof NewGame) {
-    return [new Game2(new$4(new Human(), new Human())), none()];
-  } else if (message instanceof NewOnlineGame) {
-    return [new Game2(new$4(new Human(), new AI())), none()];
+    let player_types = message.player_types;
+    let new_game$1 = new_game(player_types.red, player_types.yellow);
+    return [
+      new Game2(new_game$1),
+      (() => {
+        let $ = player_types.red;
+        if ($ instanceof Human) {
+          return none();
+        } else {
+          return get_move_api(new_game$1);
+        }
+      })()
+    ];
   } else {
-    throw makeError("panic", "connect_4", 30, "new", "should not happen", {});
+    throw makeError("panic", "connect_4", 39, "new", "should not happen", {});
   }
 }
 function update(model, msg) {
+  echo(model, "src/connect_4.gleam", 45);
+  echo(msg, "src/connect_4.gleam", 46);
   if (msg instanceof GotoMainMenu) {
     return [new MainMenu(), none()];
   } else if (msg instanceof NewGame) {
-    return new$5(msg);
-  } else if (msg instanceof NewOnlineGame) {
-    return new$5(msg);
+    return new$4(msg);
   } else if (model instanceof Game2 && msg instanceof Move) {
     let game_model = model.model;
     let column = msg.column;
@@ -5793,7 +5812,7 @@ function update(model, msg) {
       throw makeError(
         "let_assert",
         "connect_4",
-        55,
+        62,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: result }
@@ -5801,7 +5820,13 @@ function update(model, msg) {
     }
     let column = result[0];
     let updated_game = update_model(game_model, column);
-    return [new Game2(updated_game), none()];
+    let $ = updated_game.game.state;
+    let $1 = get_active_player_type(updated_game);
+    if ($ instanceof Continue2 && $1 instanceof AI) {
+      return [new Game2(updated_game), get_move_api(updated_game)];
+    } else {
+      return [new Game2(updated_game), none()];
+    }
   } else if (model instanceof Game2 && msg instanceof HighlightColumn) {
     let game_model = model.model;
     let column = msg.column;
@@ -5812,9 +5837,9 @@ function update(model, msg) {
     let updated_game = update_clear_highlighted_column(game_model);
     return [new Game2(updated_game), none()];
   } else {
-    echo(model, "src/connect_4.gleam", 70);
-    echo(msg, "src/connect_4.gleam", 71);
-    throw makeError("panic", "connect_4", 72, "update", "impossible state", {});
+    echo(model, "src/connect_4.gleam", 82);
+    echo(msg, "src/connect_4.gleam", 83);
+    throw makeError("panic", "connect_4", 84, "update", "impossible state", {});
   }
 }
 function view3(model) {
@@ -5826,13 +5851,13 @@ function view3(model) {
   }
 }
 function main() {
-  let app = application(new$5, update, view3);
+  let app = application(new$4, update, view3);
   let $ = start2(app, "#app", new GotoMainMenu());
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "connect_4",
-      13,
+      16,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

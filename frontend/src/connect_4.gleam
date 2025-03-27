@@ -4,13 +4,16 @@ import lustre/element
 
 import shared.{Continue}
 
-import messages as msg
+import models.{
+  type GameModel, type Message, AI, GotoMainMenu, HighlightColumn, Human, Move,
+  NewGame, ReceivedMove, UnhighlightColumn, get_active_player_type, new_game,
+}
 import views/game as g
 import views/main_menu as mm
 
 pub fn main() {
   let app = lustre.application(new, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", msg.GotoMainMenu)
+  let assert Ok(_) = lustre.start(app, "#app", GotoMainMenu)
 
   Nil
 }
@@ -19,49 +22,58 @@ pub fn main() {
 
 type Model {
   MainMenu
-  Game(model: g.Model)
+  Game(model: GameModel)
 }
 
-fn new(message: msg.Message) -> #(Model, effect.Effect(msg.Message)) {
+fn new(message: Message) -> #(Model, effect.Effect(Message)) {
   case message {
-    msg.GotoMainMenu -> #(MainMenu, effect.none())
-    msg.NewGame -> #(Game(g.new(g.Human, g.Human)), effect.none())
-    msg.NewOnlineGame -> #(Game(g.new(g.Human, g.AI)), effect.none())
+    GotoMainMenu -> #(MainMenu, effect.none())
+    NewGame(player_types) -> {
+      let new_game = new_game(player_types.red, player_types.yellow)
+      #(Game(new_game), case player_types.red {
+        Human -> effect.none()
+        AI -> g.get_move_api(new_game)
+      })
+    }
+
     _ -> panic as "should not happen"
   }
 }
 
 // message
-fn update(
-  model: Model,
-  msg: msg.Message,
-) -> #(Model, effect.Effect(msg.Message)) {
+fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
+  echo model
+  echo msg
   case model, msg {
     // Nvaigation
-    _, msg.GotoMainMenu -> #(MainMenu, effect.none())
-    _, msg.NewGame -> new(msg)
-    _, msg.NewOnlineGame -> new(msg)
+    _, GotoMainMenu -> #(MainMenu, effect.none())
+    _, NewGame(_) -> new(msg)
     // Move updates
-    Game(game_model), msg.Move(column) -> {
+    Game(game_model), Move(column) -> {
       let updated_game = g.update_model(game_model, column)
-      case updated_game.game.state, g.get_active_player_type(updated_game) {
+      case updated_game.game.state, get_active_player_type(updated_game) {
         // Trigger api call for ai move on AI turn
-        Continue, g.AI -> #(Game(updated_game), g.get_move_api(updated_game))
+        Continue, AI -> #(Game(updated_game), g.get_move_api(updated_game))
         // Do not trigger api call in all other scenarios
         _, _ -> #(Game(updated_game), effect.none())
       }
     }
-    Game(game_model), msg.ReceivedMove(result) -> {
+    Game(game_model), ReceivedMove(result) -> {
       let assert Ok(column) = result
       let updated_game = g.update_model(game_model, column)
-      #(Game(updated_game), effect.none())
+      case updated_game.game.state, get_active_player_type(updated_game) {
+        // Trigger api call for ai move on AI turn
+        Continue, AI -> #(Game(updated_game), g.get_move_api(updated_game))
+        // Do not trigger api call in all other scenarios
+        _, _ -> #(Game(updated_game), effect.none())
+      }
     }
     // Column highlights
-    Game(game_model), msg.HighlightColumn(column) -> {
+    Game(game_model), HighlightColumn(column) -> {
       let updated_game = g.update_highlighted_column(game_model, column)
       #(Game(updated_game), effect.none())
     }
-    Game(game_model), msg.UnhighlightColumn -> {
+    Game(game_model), UnhighlightColumn -> {
       let updated_game = g.update_clear_highlighted_column(game_model)
       #(Game(updated_game), effect.none())
     }
@@ -76,7 +88,7 @@ fn update(
 
 // view
 
-fn view(model: Model) -> element.Element(msg.Message) {
+fn view(model: Model) -> element.Element(_) {
   case model {
     MainMenu -> mm.view()
     Game(game_model) -> g.view(game_model)
