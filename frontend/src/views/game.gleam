@@ -71,14 +71,14 @@ pub fn get_move_api(model: Model) {
   let req_body =
     case model.game.active.turn {
       Red -> [
-        #("x", json.int(model.game.active.board.val)),
-        #("o", json.int(model.game.inactive.board.val)),
-        #("play_for", json.string("x")),
+        #("red", json.int(model.game.active.board.val)),
+        #("yellow", json.int(model.game.inactive.board.val)),
+        #("play_for", json.string("red")),
       ]
       Yellow -> [
-        #("x", json.int(model.game.inactive.board.val)),
-        #("o", json.int(model.game.active.board.val)),
-        #("play_for", json.string("o")),
+        #("red", json.int(model.game.inactive.board.val)),
+        #("yellow", json.int(model.game.active.board.val)),
+        #("play_for", json.string("yellow")),
       ]
     }
     |> json.object

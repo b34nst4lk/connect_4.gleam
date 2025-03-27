@@ -3816,7 +3816,7 @@ function check_consecutive(bitboard, shift, iterations) {
           throw makeError(
             "let_assert",
             "shared",
-            70,
+            63,
             "",
             "Pattern match failed, no pattern matched the value.",
             { value: $ }
@@ -3828,7 +3828,7 @@ function check_consecutive(bitboard, shift, iterations) {
           throw makeError(
             "let_assert",
             "shared",
-            71,
+            64,
             "",
             "Pattern match failed, no pattern matched the value.",
             { value: $1 }
@@ -3864,7 +3864,7 @@ function check_draw(active, inactive) {
     throw makeError(
       "let_assert",
       "shared",
-      84,
+      77,
       "check_draw",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -3899,7 +3899,7 @@ function available_moves(full_board) {
         throw makeError(
           "let_assert",
           "shared",
-          42,
+          35,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: $ }
@@ -3911,7 +3911,7 @@ function available_moves(full_board) {
         throw makeError(
           "let_assert",
           "shared",
-          43,
+          36,
           "",
           "Pattern match failed, no pattern matched the value.",
           { value: $1 }
@@ -3934,7 +3934,7 @@ function column_to_move(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      52,
+      45,
       "column_to_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -3946,7 +3946,7 @@ function column_to_move(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      54,
+      47,
       "column_to_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $1 }
@@ -3958,7 +3958,7 @@ function column_to_move(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      55,
+      48,
       "column_to_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $2 }
@@ -3970,7 +3970,7 @@ function column_to_move(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      56,
+      49,
       "column_to_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $3 }
@@ -3986,7 +3986,7 @@ function column_to_move(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      57,
+      50,
       "column_to_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $4 }
@@ -3998,7 +3998,7 @@ function column_to_move(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      58,
+      51,
       "column_to_move",
       "Pattern match failed, no pattern matched the value.",
       { value: $5 }
@@ -4013,7 +4013,7 @@ function update_game(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      104,
+      97,
       "update_game",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -4029,7 +4029,7 @@ function update_game(game, column) {
       throw makeError(
         "let_assert",
         "shared",
-        112,
+        105,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $1 }
@@ -4054,7 +4054,7 @@ function update_game(game, column) {
       throw makeError(
         "let_assert",
         "shared",
-        116,
+        109,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $2 }
@@ -5443,15 +5443,15 @@ function get_move_api(model) {
       let $ = model.game.active.turn;
       if ($ instanceof Red) {
         return toList([
-          ["x", int3(model.game.active.board.val)],
-          ["o", int3(model.game.inactive.board.val)],
-          ["play_for", string3("x")]
+          ["red", int3(model.game.active.board.val)],
+          ["yellow", int3(model.game.inactive.board.val)],
+          ["play_for", string3("red")]
         ]);
       } else {
         return toList([
-          ["x", int3(model.game.inactive.board.val)],
-          ["o", int3(model.game.active.board.val)],
-          ["play_for", string3("o")]
+          ["red", int3(model.game.inactive.board.val)],
+          ["yellow", int3(model.game.active.board.val)],
+          ["play_for", string3("yellow")]
         ]);
       }
     })();
