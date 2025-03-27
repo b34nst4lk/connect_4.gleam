@@ -8,7 +8,8 @@ pub fn view() -> element.Element(_) {
   html.div([], [
     html.h1([], [
       element.text("CONNECT 4 LOL"),
-      html.button([event.on_click(msg.NewGame)], [element.text("NEW GAME")]),
+      html.button([event.on_click(msg.NewGame)], [element.text("Play locally")]),
+      html.button([event.on_click(msg.NewOnlineGame)], [element.text("VS AI")]),
     ]),
   ])
 }

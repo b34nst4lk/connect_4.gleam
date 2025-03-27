@@ -1,5 +1,4 @@
-name = "connect_4"
-target = "javascript"
+name = "shared"
 version = "1.0.0"
 
 # Fill out these fields if you intend to generate HTML documentation or publish
@@ -15,12 +14,7 @@ version = "1.0.0"
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
-lustre = ">= 4.6.4 and < 5.0.0"
 bibi = ">= 0.0.5 and < 1.0.0"
-lustre_http = ">= 0.7.0 and < 1.0.0"
-gleam_json = ">= 2.3.0 and < 3.0.0"
-shared = { path = "../shared"}
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
-lustre_dev_tools = ">= 1.6.5 and < 2.0.0"
