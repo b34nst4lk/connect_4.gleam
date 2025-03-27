@@ -2,6 +2,8 @@ import lustre
 import lustre/effect
 import lustre/element
 
+import shared.{Continue}
+
 import messages as msg
 import views/game as g
 import views/main_menu as mm
@@ -41,17 +43,17 @@ fn update(
     _, msg.NewOnlineGame -> new(msg)
     // Move updates
     Game(game_model), msg.Move(column) -> {
-      let updated_game = g.update_game(game_model, column)
-      case updated_game.state, updated_game.active.turn.player {
+      let updated_game = g.update_model(game_model, column)
+      case updated_game.game.state, g.get_active_player_type(updated_game) {
         // Trigger api call for ai move on AI turn
-        g.Continue, g.AI -> #(Game(updated_game), g.get_move_api(updated_game))
+        Continue, g.AI -> #(Game(updated_game), g.get_move_api(updated_game))
         // Do not trigger api call in all other scenarios
         _, _ -> #(Game(updated_game), effect.none())
       }
     }
     Game(game_model), msg.ReceivedMove(result) -> {
       let assert Ok(column) = result
-      let updated_game = g.update_game(game_model, column)
+      let updated_game = g.update_model(game_model, column)
       #(Game(updated_game), effect.none())
     }
     // Column highlights

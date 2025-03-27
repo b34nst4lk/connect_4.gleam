@@ -318,7 +318,7 @@ function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
       isSigned
     );
   }
-  const size2 = end - start3;
+  const size = end - start3;
   const startByteIndex = Math.trunc(start3 / 8);
   const endByteIndex = Math.trunc((end - 1) / 8);
   if (startByteIndex == endByteIndex) {
@@ -326,14 +326,14 @@ function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
     const unusedLowBitCount = (8 - end % 8) % 8;
     let value = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
     if (isSigned) {
-      const highBit = 2 ** (size2 - 1);
+      const highBit = 2 ** (size - 1);
       if (value >= highBit) {
         value -= highBit * 2;
       }
     }
     return value;
   }
-  if (size2 <= 53) {
+  if (size <= 53) {
     return intFromUnalignedSliceUsingNumber(
       bitArray.rawBuffer,
       start3,
@@ -417,53 +417,53 @@ function intFromAlignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSign
 }
 function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
   const isStartByteAligned = start3 % 8 === 0;
-  let size2 = end - start3;
+  let size = end - start3;
   let byteIndex = Math.trunc(start3 / 8);
   let value = 0;
   if (isBigEndian) {
     if (!isStartByteAligned) {
       const leadingBitsCount = 8 - start3 % 8;
       value = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
-      size2 -= leadingBitsCount;
+      size -= leadingBitsCount;
     }
-    while (size2 >= 8) {
+    while (size >= 8) {
       value *= 256;
       value += buffer[byteIndex++];
-      size2 -= 8;
+      size -= 8;
     }
-    if (size2 > 0) {
-      value *= 2 ** size2;
-      value += buffer[byteIndex] >> 8 - size2;
+    if (size > 0) {
+      value *= 2 ** size;
+      value += buffer[byteIndex] >> 8 - size;
     }
   } else {
     if (isStartByteAligned) {
-      let size3 = end - start3;
+      let size2 = end - start3;
       let scale = 1;
-      while (size3 >= 8) {
+      while (size2 >= 8) {
         value += buffer[byteIndex++] * scale;
         scale *= 256;
-        size3 -= 8;
+        size2 -= 8;
       }
-      value += (buffer[byteIndex] >> 8 - size3) * scale;
+      value += (buffer[byteIndex] >> 8 - size2) * scale;
     } else {
       const highBitsCount = start3 % 8;
       const lowBitsCount = 8 - highBitsCount;
-      let size3 = end - start3;
+      let size2 = end - start3;
       let scale = 1;
-      while (size3 >= 8) {
+      while (size2 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
         value += (byte & 255) * scale;
         scale *= 256;
-        size3 -= 8;
+        size2 -= 8;
         byteIndex++;
       }
-      if (size3 > 0) {
-        const lowBitsUsed = size3 - Math.max(0, size3 - lowBitsCount);
+      if (size2 > 0) {
+        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
         let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
-        size3 -= lowBitsUsed;
-        if (size3 > 0) {
-          trailingByte *= 2 ** size3;
-          trailingByte += buffer[byteIndex + 1] >> 8 - size3;
+        size2 -= lowBitsUsed;
+        if (size2 > 0) {
+          trailingByte *= 2 ** size2;
+          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
         }
         value += trailingByte * scale;
       }
@@ -479,53 +479,53 @@ function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSi
 }
 function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
   const isStartByteAligned = start3 % 8 === 0;
-  let size2 = end - start3;
+  let size = end - start3;
   let byteIndex = Math.trunc(start3 / 8);
   let value = 0n;
   if (isBigEndian) {
     if (!isStartByteAligned) {
       const leadingBitsCount = 8 - start3 % 8;
       value = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
-      size2 -= leadingBitsCount;
+      size -= leadingBitsCount;
     }
-    while (size2 >= 8) {
+    while (size >= 8) {
       value *= 256n;
       value += BigInt(buffer[byteIndex++]);
-      size2 -= 8;
+      size -= 8;
     }
-    if (size2 > 0) {
-      value <<= BigInt(size2);
-      value += BigInt(buffer[byteIndex] >> 8 - size2);
+    if (size > 0) {
+      value <<= BigInt(size);
+      value += BigInt(buffer[byteIndex] >> 8 - size);
     }
   } else {
     if (isStartByteAligned) {
-      let size3 = end - start3;
+      let size2 = end - start3;
       let shift = 0n;
-      while (size3 >= 8) {
+      while (size2 >= 8) {
         value += BigInt(buffer[byteIndex++]) << shift;
         shift += 8n;
-        size3 -= 8;
+        size2 -= 8;
       }
-      value += BigInt(buffer[byteIndex] >> 8 - size3) << shift;
+      value += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
     } else {
       const highBitsCount = start3 % 8;
       const lowBitsCount = 8 - highBitsCount;
-      let size3 = end - start3;
+      let size2 = end - start3;
       let shift = 0n;
-      while (size3 >= 8) {
+      while (size2 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
         value += BigInt(byte & 255) << shift;
         shift += 8n;
-        size3 -= 8;
+        size2 -= 8;
         byteIndex++;
       }
-      if (size3 > 0) {
-        const lowBitsUsed = size3 - Math.max(0, size3 - lowBitsCount);
+      if (size2 > 0) {
+        const lowBitsUsed = size2 - Math.max(0, size2 - lowBitsCount);
         let trailingByte = (buffer[byteIndex] & (1 << lowBitsCount) - 1) >> lowBitsCount - lowBitsUsed;
-        size3 -= lowBitsUsed;
-        if (size3 > 0) {
-          trailingByte <<= size3;
-          trailingByte += buffer[byteIndex + 1] >> 8 - size3;
+        size2 -= lowBitsUsed;
+        if (size2 > 0) {
+          trailingByte <<= size2;
+          trailingByte += buffer[byteIndex + 1] >> 8 - size2;
         }
         value += BigInt(trailingByte) << shift;
       }
@@ -991,12 +991,12 @@ function assocCollision(root, shift, hash, key, val, addedLeaf) {
         array: cloneAndSet(root.array, idx, { type: ENTRY, k: key, v: val })
       };
     }
-    const size2 = root.array.length;
+    const size = root.array.length;
     addedLeaf.val = true;
     return {
       type: COLLISION_NODE,
       hash,
-      array: cloneAndSet(root.array, size2, { type: ENTRY, k: key, v: val })
+      array: cloneAndSet(root.array, size, { type: ENTRY, k: key, v: val })
     };
   }
   return assoc(
@@ -1013,8 +1013,8 @@ function assocCollision(root, shift, hash, key, val, addedLeaf) {
   );
 }
 function collisionIndexOf(root, key) {
-  const size2 = root.array.length;
-  for (let i = 0; i < size2; i++) {
+  const size = root.array.length;
+  for (let i = 0; i < size; i++) {
     if (isEqual(key, root.array[i].k)) {
       return i;
     }
@@ -1197,8 +1197,8 @@ function forEach(root, fn) {
     return;
   }
   const items = root.array;
-  const size2 = items.length;
-  for (let i = 0; i < size2; i++) {
+  const size = items.length;
+  for (let i = 0; i < size; i++) {
     const item = items[i];
     if (item === void 0) {
       continue;
@@ -1244,9 +1244,9 @@ var Dict = class _Dict {
    * @param {undefined | Node<K,V>} root
    * @param {number} size
    */
-  constructor(root, size2) {
+  constructor(root, size) {
     this.root = root;
-    this.size = size2;
+    this.size = size;
   }
   /**
    * @template NotFound
@@ -1415,15 +1415,15 @@ function graphemes_iterator(string5) {
   }
 }
 function pop_grapheme(string5) {
-  let first3;
+  let first2;
   const iterator = graphemes_iterator(string5);
   if (iterator) {
-    first3 = iterator.next().value?.segment;
+    first2 = iterator.next().value?.segment;
   } else {
-    first3 = string5.match(/./su)?.[0];
+    first2 = string5.match(/./su)?.[0];
   }
-  if (first3) {
-    return new Ok([first3, string5.slice(first3.length)]);
+  if (first2) {
+    return new Ok([first2, string5.slice(first2.length)]);
   } else {
     return new Error(Nil);
   }
@@ -1471,9 +1471,6 @@ var trim_start_regex = new RegExp(`^[${unicode_whitespaces}]*`);
 var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
 function new_map() {
   return Dict.new();
-}
-function map_size(map7) {
-  return map7.size;
 }
 function map_to_list(map7) {
   return List.fromArray(map7.entries());
@@ -1558,10 +1555,10 @@ function reverse_and_concat(loop$remaining, loop$accumulator) {
     if (remaining.hasLength(0)) {
       return accumulator;
     } else {
-      let first3 = remaining.head;
+      let first2 = remaining.head;
       let rest = remaining.tail;
       loop$remaining = rest;
-      loop$accumulator = prepend(first3, accumulator);
+      loop$accumulator = prepend(first2, accumulator);
     }
   }
 }
@@ -1617,14 +1614,6 @@ function reverse_and_prepend(loop$prefix, loop$suffix) {
 function reverse(list2) {
   return reverse_and_prepend(list2, toList([]));
 }
-function first(list2) {
-  if (list2.hasLength(0)) {
-    return new Error(void 0);
-  } else {
-    let first$1 = list2.head;
-    return new Ok(first$1);
-  }
-}
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
     let list2 = loop$list;
@@ -1646,20 +1635,20 @@ function map(list2, fun) {
 }
 function append_loop(loop$first, loop$second) {
   while (true) {
-    let first3 = loop$first;
+    let first2 = loop$first;
     let second = loop$second;
-    if (first3.hasLength(0)) {
+    if (first2.hasLength(0)) {
       return second;
     } else {
-      let first$1 = first3.head;
-      let rest$1 = first3.tail;
+      let first$1 = first2.head;
+      let rest$1 = first2.tail;
       loop$first = rest$1;
       loop$second = prepend(first$1, second);
     }
   }
 }
-function append(first3, second) {
-  return append_loop(reverse(first3), second);
+function append(first2, second) {
+  return append_loop(reverse(first2), second);
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
@@ -1889,9 +1878,9 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first22 = list2.head;
+      let first2 = list2.head;
       let rest2 = list2.tail;
-      let $ = compare3(first1, first22);
+      let $ = compare3(first1, first2);
       if ($ instanceof Lt) {
         loop$list1 = rest1;
         loop$list2 = list2;
@@ -1901,12 +1890,12 @@ function merge_ascendings(loop$list1, loop$list2, loop$compare, loop$acc) {
         loop$list1 = list1;
         loop$list2 = rest2;
         loop$compare = compare3;
-        loop$acc = prepend(first22, acc);
+        loop$acc = prepend(first2, acc);
       } else {
         loop$list1 = list1;
         loop$list2 = rest2;
         loop$compare = compare3;
-        loop$acc = prepend(first22, acc);
+        loop$acc = prepend(first2, acc);
       }
     }
   }
@@ -1952,14 +1941,14 @@ function merge_descendings(loop$list1, loop$list2, loop$compare, loop$acc) {
     } else {
       let first1 = list1.head;
       let rest1 = list1.tail;
-      let first22 = list2.head;
+      let first2 = list2.head;
       let rest2 = list2.tail;
-      let $ = compare3(first1, first22);
+      let $ = compare3(first1, first2);
       if ($ instanceof Lt) {
         loop$list1 = list1;
         loop$list2 = rest2;
         loop$compare = compare3;
-        loop$acc = prepend(first22, acc);
+        loop$acc = prepend(first2, acc);
       } else if ($ instanceof Gt) {
         loop$list1 = rest1;
         loop$list2 = list2;
@@ -2275,10 +2264,10 @@ function run_decoders(loop$data, loop$failure, loop$decoders) {
     }
   }
 }
-function one_of(first3, alternatives) {
+function one_of(first2, alternatives) {
   return new Decoder(
     (dynamic_data) => {
-      let $ = first3.function(dynamic_data);
+      let $ = first2.function(dynamic_data);
       let layer = $;
       let errors = $[1];
       if (errors.hasLength(0)) {
@@ -2744,9 +2733,6 @@ var Set2 = class extends CustomType {
 };
 function new$2() {
   return new Set2(new_map());
-}
-function size(set) {
-  return map_size(set.dict);
 }
 function contains(set, member) {
   let _pipe = set.dict;
@@ -3447,6 +3433,640 @@ function start2(app, selector, flags) {
   );
 }
 
+// build/dev/javascript/bibi/bibi/bitboard.mjs
+var Bitboard = class extends CustomType {
+  constructor(width, height, val) {
+    super();
+    this.width = width;
+    this.height = height;
+    this.val = val;
+  }
+};
+function validate_equal_dimensions(bitboard_1, bitboard_2) {
+  return guard(
+    bitboard_1.width !== bitboard_2.width,
+    new Error("bitboard widths must be equal"),
+    () => {
+      return guard(
+        bitboard_1.height !== bitboard_2.height,
+        new Error("bitboard heights must be equal"),
+        () => {
+          return new Ok(void 0);
+        }
+      );
+    }
+  );
+}
+function new$3(width, height) {
+  return guard(
+    width < 0,
+    new Error("width must be positive"),
+    () => {
+      return guard(
+        height < 0,
+        new Error("height must be positive"),
+        () => {
+          return new Ok(new Bitboard(width, height, 0));
+        }
+      );
+    }
+  );
+}
+function from_square(width, height, square) {
+  return guard(
+    width < 0,
+    new Error("width must be positive"),
+    () => {
+      return guard(
+        height < 0,
+        new Error("height must be positive"),
+        () => {
+          return guard(
+            square > width * height,
+            new Error(
+              "square (" + to_string(square) + ") must be less than width (" + to_string(
+                width
+              ) + ") *height (" + to_string(height) + ")"
+            ),
+            () => {
+              return new Ok(
+                new Bitboard(width, height, bitwise_shift_left(1, square))
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function to_squares(b) {
+  let result = (() => {
+    let _pipe = range(0, b.width * b.height - 1);
+    return fold_until(
+      _pipe,
+      [b.val, toList([])],
+      (acc, i) => {
+        let board2 = acc[0];
+        let l = acc[1];
+        let l$1 = (() => {
+          let $2 = bitwise_and(1, board2) > 0;
+          if ($2) {
+            return prepend(i, l);
+          } else {
+            return l;
+          }
+        })();
+        let board$1 = bitwise_shift_right(board2, 1);
+        let $ = board$1 > 0;
+        if ($) {
+          return new Continue([board$1, l$1]);
+        } else {
+          return new Stop([board$1, l$1]);
+        }
+      }
+    );
+  })();
+  return result[1];
+}
+function int_full_mask(b) {
+  return bitwise_shift_left(1, b.width * b.height) - 1;
+}
+function full_mask(b) {
+  let _record = b;
+  return new Bitboard(_record.width, _record.height, int_full_mask(b));
+}
+function first_file(loop$bitboard, loop$counter, loop$val) {
+  while (true) {
+    let bitboard = loop$bitboard;
+    let counter = loop$counter;
+    let val = loop$val;
+    let $ = counter >= bitboard.height;
+    if ($) {
+      let _record = bitboard;
+      return new Bitboard(_record.width, _record.height, val);
+    } else {
+      loop$bitboard = bitboard;
+      loop$counter = counter + 1;
+      loop$val = bitwise_or(
+        bitwise_shift_left(1, counter * bitboard.width),
+        val
+      );
+    }
+  }
+}
+function file(bitboard, file_no) {
+  return guard(
+    file_no < 0,
+    new Error("file_no must be positive"),
+    () => {
+      return guard(
+        file_no >= bitboard.width,
+        new Error("file_no must be less than bitboard.width"),
+        () => {
+          let first_file$1 = first_file(bitboard, 0, 0);
+          let file$1 = bitwise_shift_left(first_file$1.val, file_no);
+          return new Ok(
+            (() => {
+              let _record = bitboard;
+              return new Bitboard(_record.width, _record.height, file$1);
+            })()
+          );
+        }
+      );
+    }
+  );
+}
+function bitboard_and(bitboard_1, bitboard_2) {
+  let $ = validate_equal_dimensions(bitboard_1, bitboard_2);
+  if (!$.isOk()) {
+    let err = $[0];
+    return new Error(err);
+  } else {
+    return new Ok(
+      (() => {
+        let _record = bitboard_1;
+        return new Bitboard(
+          _record.width,
+          _record.height,
+          bitwise_and(bitboard_1.val, bitboard_2.val)
+        );
+      })()
+    );
+  }
+}
+function bitboard_or(bitboard_1, bitboard_2) {
+  let $ = validate_equal_dimensions(bitboard_1, bitboard_2);
+  if (!$.isOk()) {
+    let err = $[0];
+    return new Error(err);
+  } else {
+    return new Ok(
+      (() => {
+        let _record = bitboard_1;
+        return new Bitboard(
+          _record.width,
+          _record.height,
+          bitwise_or(bitboard_1.val, bitboard_2.val)
+        );
+      })()
+    );
+  }
+}
+function bitboard_xor(bitboard_1, bitboard_2) {
+  let $ = validate_equal_dimensions(bitboard_1, bitboard_2);
+  if (!$.isOk()) {
+    let err = $[0];
+    return new Error(err);
+  } else {
+    return new Ok(
+      (() => {
+        let _record = bitboard_1;
+        return new Bitboard(
+          _record.width,
+          _record.height,
+          bitwise_exclusive_or(bitboard_1.val, bitboard_2.val)
+        );
+      })()
+    );
+  }
+}
+function shift_north_unvalidated(bitboard, i) {
+  let val = (() => {
+    let _pipe = bitboard.val;
+    let _pipe$1 = bitwise_shift_left(_pipe, i * bitboard.width);
+    return bitwise_and(_pipe$1, int_full_mask(bitboard));
+  })();
+  let _record = bitboard;
+  return new Bitboard(_record.width, _record.height, val);
+}
+function shift_north(bitboard, i) {
+  return guard(
+    i === 0,
+    new Ok(bitboard),
+    () => {
+      return guard(
+        i < 0,
+        new Error("shift_north by must be >= 0"),
+        () => {
+          return new Ok(shift_north_unvalidated(bitboard, i));
+        }
+      );
+    }
+  );
+}
+function shift_west_unvalidated(bitboard, i) {
+  let mask2 = (() => {
+    let _pipe = range(0, i - 1);
+    return fold(
+      _pipe,
+      0,
+      (m, i2) => {
+        let $ = file(bitboard, i2);
+        if (!$.isOk()) {
+          throw makeError(
+            "let_assert",
+            "bibi/bitboard",
+            635,
+            "",
+            "Pattern match failed, no pattern matched the value.",
+            { value: $ }
+          );
+        }
+        let r = $[0];
+        return bitwise_or(m, r.val);
+      }
+    );
+  })();
+  let updated_val = bitboard.val - bitwise_and(mask2, bitboard.val);
+  let val = (() => {
+    let _pipe = updated_val;
+    return bitwise_shift_right(_pipe, i);
+  })();
+  let _record = bitboard;
+  return new Bitboard(_record.width, _record.height, val);
+}
+function shift_east_unvalidated(bitboard, i) {
+  let mask2 = (() => {
+    let _pipe = range(bitboard.width - 1, bitboard.width - i);
+    return fold(
+      _pipe,
+      0,
+      (m, i2) => {
+        let $ = file(bitboard, i2);
+        if (!$.isOk()) {
+          throw makeError(
+            "let_assert",
+            "bibi/bitboard",
+            667,
+            "",
+            "Pattern match failed, no pattern matched the value.",
+            { value: $ }
+          );
+        }
+        let r = $[0];
+        return bitwise_or(m, r.val);
+      }
+    );
+  })();
+  let updated_val = bitboard.val - bitwise_and(mask2, bitboard.val);
+  let val = (() => {
+    let _pipe = updated_val;
+    return bitwise_shift_left(_pipe, i);
+  })();
+  let _record = bitboard;
+  return new Bitboard(_record.width, _record.height, val);
+}
+function shift_east(bitboard, i) {
+  return guard(
+    i === 0,
+    new Ok(bitboard),
+    () => {
+      return guard(
+        i < 0,
+        new Error("shift_east by must be >= 0"),
+        () => {
+          return guard(
+            i >= bitboard.width,
+            new Error("shift_east by must be < bitboard.width"),
+            () => {
+              return new Ok(shift_east_unvalidated(bitboard, i));
+            }
+          );
+        }
+      );
+    }
+  );
+}
+function shift_northeast(bitboard, i) {
+  return guard(
+    i === 0,
+    new Ok(bitboard),
+    () => {
+      return guard(
+        i < 0,
+        new Error("shift_northeast by must be >= 0"),
+        () => {
+          let _pipe = bitboard;
+          let _pipe$1 = shift_east_unvalidated(_pipe, i);
+          let _pipe$2 = shift_north_unvalidated(_pipe$1, i);
+          return new Ok(_pipe$2);
+        }
+      );
+    }
+  );
+}
+function shift_northwest(bitboard, i) {
+  return guard(
+    i === 0,
+    new Ok(bitboard),
+    () => {
+      return guard(
+        i < 0,
+        new Error("shift_northwest by must be >= 0"),
+        () => {
+          let _pipe = bitboard;
+          let _pipe$1 = shift_west_unvalidated(_pipe, i);
+          let _pipe$2 = shift_north_unvalidated(_pipe$1, i);
+          return new Ok(_pipe$2);
+        }
+      );
+    }
+  );
+}
+
+// build/dev/javascript/shared/shared.mjs
+var Red = class extends CustomType {
+};
+var Yellow = class extends CustomType {
+};
+var Player = class extends CustomType {
+  constructor(turn, board2) {
+    super();
+    this.turn = turn;
+    this.board = board2;
+  }
+};
+var Win = class extends CustomType {
+  constructor(t) {
+    super();
+    this.t = t;
+  }
+};
+var Draw = class extends CustomType {
+};
+var Continue2 = class extends CustomType {
+};
+var Game = class extends CustomType {
+  constructor(active, inactive, state) {
+    super();
+    this.active = active;
+    this.inactive = inactive;
+    this.state = state;
+  }
+};
+function check_consecutive(bitboard, shift, iterations) {
+  let final_board = (() => {
+    let _pipe = range(0, iterations - 1);
+    return fold(
+      _pipe,
+      bitboard,
+      (board2, i) => {
+        let $ = shift(bitboard, i);
+        if (!$.isOk()) {
+          throw makeError(
+            "let_assert",
+            "shared",
+            70,
+            "",
+            "Pattern match failed, no pattern matched the value.",
+            { value: $ }
+          );
+        }
+        let shifted_board = $[0];
+        let $1 = bitboard_and(board2, shifted_board);
+        if (!$1.isOk()) {
+          throw makeError(
+            "let_assert",
+            "shared",
+            71,
+            "",
+            "Pattern match failed, no pattern matched the value.",
+            { value: $1 }
+          );
+        }
+        let board$1 = $1[0];
+        return board$1;
+      }
+    );
+  })();
+  return final_board.val > 0;
+}
+function check_win(board2) {
+  let _pipe = toList([
+    shift_north,
+    shift_east,
+    shift_northeast,
+    shift_northwest
+  ]);
+  let _pipe$1 = map(
+    _pipe,
+    (shift) => {
+      return check_consecutive(board2, shift, 4);
+    }
+  );
+  return any(_pipe$1, (bool3) => {
+    return bool3;
+  });
+}
+function check_draw(active, inactive) {
+  let $ = bitboard_or(active.board, inactive.board);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      84,
+      "check_draw",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let board2 = $[0];
+  let full_mask2 = full_mask(active.board);
+  return isEqual(full_mask2, board2);
+}
+function check_game_state(active, inactive) {
+  let $ = check_win(active.board);
+  if ($) {
+    return new Win(active.turn);
+  } else {
+    let $1 = check_draw(active, inactive);
+    if ($1) {
+      return new Draw();
+    } else {
+      return new Continue2();
+    }
+  }
+}
+var connect_4_width = 7;
+function available_moves(full_board) {
+  let _pipe = range(0, connect_4_width - 1);
+  return fold(
+    _pipe,
+    new$2(),
+    (moves, i) => {
+      let $ = file(full_board, i);
+      if (!$.isOk()) {
+        throw makeError(
+          "let_assert",
+          "shared",
+          42,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $ }
+        );
+      }
+      let mask2 = $[0];
+      let $1 = bitboard_and(mask2, full_board);
+      if (!$1.isOk()) {
+        throw makeError(
+          "let_assert",
+          "shared",
+          43,
+          "",
+          "Pattern match failed, no pattern matched the value.",
+          { value: $1 }
+        );
+      }
+      let file2 = $1[0];
+      let $2 = isEqual(mask2, file2);
+      if ($2) {
+        return moves;
+      } else {
+        return insert2(moves, i);
+      }
+    }
+  );
+}
+var connect_4_height = 6;
+function column_to_move(game, column) {
+  let $ = bitboard_or(game.active.board, game.inactive.board);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      52,
+      "column_to_move",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let full_board = $[0];
+  let $1 = file(full_board, column);
+  if (!$1.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      54,
+      "column_to_move",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $1 }
+    );
+  }
+  let mask2 = $1[0];
+  let $2 = bitboard_and(full_board, mask2);
+  if (!$2.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      55,
+      "column_to_move",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $2 }
+    );
+  }
+  let col = $2[0];
+  let $3 = bitboard_xor(col, mask2);
+  if (!$3.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      56,
+      "column_to_move",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $3 }
+    );
+  }
+  let empty_slots = $3[0];
+  let $4 = (() => {
+    let _pipe = empty_slots;
+    let _pipe$1 = to_squares(_pipe);
+    return last(_pipe$1);
+  })();
+  if (!$4.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      57,
+      "column_to_move",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $4 }
+    );
+  }
+  let square = $4[0];
+  let $5 = from_square(connect_4_width, connect_4_height, square);
+  if (!$5.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      58,
+      "column_to_move",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $5 }
+    );
+  }
+  let move = $5[0];
+  return move;
+}
+function update_game(game, column) {
+  let $ = bitboard_or(game.active.board, game.inactive.board);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      104,
+      "update_game",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let full_board = $[0];
+  let moves = available_moves(full_board);
+  let is_legal = contains(moves, column);
+  if (is_legal) {
+    let move = column_to_move(game, column);
+    let $1 = bitboard_or(move, game.active.board);
+    if (!$1.isOk()) {
+      throw makeError(
+        "let_assert",
+        "shared",
+        112,
+        "update_game",
+        "Pattern match failed, no pattern matched the value.",
+        { value: $1 }
+      );
+    }
+    let updated_board = $1[0];
+    let active = (() => {
+      let _record = game.active;
+      return new Player(_record.turn, updated_board);
+    })();
+    let updated_game = new Game(
+      game.inactive,
+      active,
+      check_game_state(active, game.inactive)
+    );
+    let $2 = (() => {
+      let _pipe = move;
+      let _pipe$1 = to_squares(_pipe);
+      return last(_pipe$1);
+    })();
+    if (!$2.isOk()) {
+      throw makeError(
+        "let_assert",
+        "shared",
+        116,
+        "update_game",
+        "Pattern match failed, no pattern matched the value.",
+        { value: $2 }
+      );
+    }
+    let last_cell_updated = $2[0];
+    return [updated_game, last_cell_updated];
+  } else {
+    return [game, -1];
+  }
+}
+
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
 var Uri = class extends CustomType {
   constructor(scheme, userinfo, host, port, path, query, fragment) {
@@ -3484,13 +4104,13 @@ function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loo
     let original = loop$original;
     let uri_string = loop$uri_string;
     let pieces = loop$pieces;
-    let size2 = loop$size;
-    if (uri_string.startsWith("#") && size2 === 0) {
+    let size = loop$size;
+    if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_fragment(rest, pieces);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let query = string_codeunit_slice(original, 0, size2);
+      let query = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3525,7 +4145,7 @@ function parse_query_with_question_mark_loop(loop$original, loop$uri_string, loo
       loop$original = original;
       loop$uri_string = rest;
       loop$pieces = pieces;
-      loop$size = size2 + 1;
+      loop$size = size + 1;
     }
   }
 }
@@ -3537,10 +4157,10 @@ function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size)
     let original = loop$original;
     let uri_string = loop$uri_string;
     let pieces = loop$pieces;
-    let size2 = loop$size;
+    let size = loop$size;
     if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
-      let path = string_codeunit_slice(original, 0, size2);
+      let path = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3556,7 +4176,7 @@ function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size)
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let path = string_codeunit_slice(original, 0, size2);
+      let path = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3591,7 +4211,7 @@ function parse_path_loop(loop$original, loop$uri_string, loop$pieces, loop$size)
       loop$original = original;
       loop$uri_string = rest;
       loop$pieces = pieces;
-      loop$size = size2 + 1;
+      loop$size = size + 1;
     }
   }
 }
@@ -3769,7 +4389,7 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
     let original = loop$original;
     let uri_string = loop$uri_string;
     let pieces = loop$pieces;
-    let size2 = loop$size;
+    let size = loop$size;
     if (uri_string === "") {
       return new Ok(
         (() => {
@@ -3786,7 +4406,7 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
         })()
       );
     } else if (uri_string.startsWith(":")) {
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3801,7 +4421,7 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
       })();
       return parse_port(uri_string, pieces$1);
     } else if (uri_string.startsWith("/")) {
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3817,7 +4437,7 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
       return parse_path(uri_string, pieces$1);
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3833,7 +4453,7 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
       return parse_query_with_question_mark(rest, pieces$1);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3853,7 +4473,7 @@ function parse_host_outside_of_brackets_loop(loop$original, loop$uri_string, loo
       loop$original = original;
       loop$uri_string = rest;
       loop$pieces = pieces;
-      loop$size = size2 + 1;
+      loop$size = size + 1;
     }
   }
 }
@@ -3862,7 +4482,7 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
     let original = loop$original;
     let uri_string = loop$uri_string;
     let pieces = loop$pieces;
-    let size2 = loop$size;
+    let size = loop$size;
     if (uri_string === "") {
       return new Ok(
         (() => {
@@ -3878,12 +4498,12 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
           );
         })()
       );
-    } else if (uri_string.startsWith("]") && size2 === 0) {
+    } else if (uri_string.startsWith("]") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_port(rest, pieces);
     } else if (uri_string.startsWith("]")) {
       let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size2 + 1);
+      let host = string_codeunit_slice(original, 0, size + 1);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3897,10 +4517,10 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
         );
       })();
       return parse_port(rest, pieces$1);
-    } else if (uri_string.startsWith("/") && size2 === 0) {
+    } else if (uri_string.startsWith("/") && size === 0) {
       return parse_path(uri_string, pieces);
     } else if (uri_string.startsWith("/")) {
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3914,12 +4534,12 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
         );
       })();
       return parse_path(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?") && size2 === 0) {
+    } else if (uri_string.startsWith("?") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_query_with_question_mark(rest, pieces);
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3933,12 +4553,12 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
         );
       })();
       return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#") && size2 === 0) {
+    } else if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_fragment(rest, pieces);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let host = string_codeunit_slice(original, 0, size2);
+      let host = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -3961,7 +4581,7 @@ function parse_host_within_brackets_loop(loop$original, loop$uri_string, loop$pi
         loop$original = original;
         loop$uri_string = rest;
         loop$pieces = pieces;
-        loop$size = size2 + 1;
+        loop$size = size + 1;
       } else {
         return parse_host_outside_of_brackets_loop(
           original,
@@ -4020,13 +4640,13 @@ function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$s
     let original = loop$original;
     let uri_string = loop$uri_string;
     let pieces = loop$pieces;
-    let size2 = loop$size;
-    if (uri_string.startsWith("@") && size2 === 0) {
+    let size = loop$size;
+    if (uri_string.startsWith("@") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_host(rest, pieces);
     } else if (uri_string.startsWith("@")) {
       let rest = uri_string.slice(1);
-      let userinfo = string_codeunit_slice(original, 0, size2);
+      let userinfo = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -4054,7 +4674,7 @@ function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$s
       loop$original = original;
       loop$uri_string = rest;
       loop$pieces = pieces;
-      loop$size = size2 + 1;
+      loop$size = size + 1;
     }
   }
 }
@@ -4089,11 +4709,11 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     let original = loop$original;
     let uri_string = loop$uri_string;
     let pieces = loop$pieces;
-    let size2 = loop$size;
-    if (uri_string.startsWith("/") && size2 === 0) {
+    let size = loop$size;
+    if (uri_string.startsWith("/") && size === 0) {
       return parse_authority_with_slashes(uri_string, pieces);
     } else if (uri_string.startsWith("/")) {
-      let scheme = string_codeunit_slice(original, 0, size2);
+      let scheme = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -4107,12 +4727,12 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
         );
       })();
       return parse_authority_with_slashes(uri_string, pieces$1);
-    } else if (uri_string.startsWith("?") && size2 === 0) {
+    } else if (uri_string.startsWith("?") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_query_with_question_mark(rest, pieces);
     } else if (uri_string.startsWith("?")) {
       let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size2);
+      let scheme = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -4126,12 +4746,12 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
         );
       })();
       return parse_query_with_question_mark(rest, pieces$1);
-    } else if (uri_string.startsWith("#") && size2 === 0) {
+    } else if (uri_string.startsWith("#") && size === 0) {
       let rest = uri_string.slice(1);
       return parse_fragment(rest, pieces);
     } else if (uri_string.startsWith("#")) {
       let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size2);
+      let scheme = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -4145,11 +4765,11 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
         );
       })();
       return parse_fragment(rest, pieces$1);
-    } else if (uri_string.startsWith(":") && size2 === 0) {
+    } else if (uri_string.startsWith(":") && size === 0) {
       return new Error(void 0);
     } else if (uri_string.startsWith(":")) {
       let rest = uri_string.slice(1);
-      let scheme = string_codeunit_slice(original, 0, size2);
+      let scheme = string_codeunit_slice(original, 0, size);
       let pieces$1 = (() => {
         let _record = pieces;
         return new Uri(
@@ -4184,7 +4804,7 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
       loop$original = original;
       loop$uri_string = rest;
       loop$pieces = pieces;
-      loop$size = size2 + 1;
+      loop$size = size + 1;
     }
   }
 }
@@ -4716,343 +5336,6 @@ var HighlightColumn = class extends CustomType {
 var UnhighlightColumn = class extends CustomType {
 };
 
-// build/dev/javascript/bibi/bibi/bitboard.mjs
-var Bitboard = class extends CustomType {
-  constructor(width, height, val) {
-    super();
-    this.width = width;
-    this.height = height;
-    this.val = val;
-  }
-};
-function validate_equal_dimensions(bitboard_1, bitboard_2) {
-  return guard(
-    bitboard_1.width !== bitboard_2.width,
-    new Error("bitboard widths must be equal"),
-    () => {
-      return guard(
-        bitboard_1.height !== bitboard_2.height,
-        new Error("bitboard heights must be equal"),
-        () => {
-          return new Ok(void 0);
-        }
-      );
-    }
-  );
-}
-function new$3(width, height) {
-  return guard(
-    width < 0,
-    new Error("width must be positive"),
-    () => {
-      return guard(
-        height < 0,
-        new Error("height must be positive"),
-        () => {
-          return new Ok(new Bitboard(width, height, 0));
-        }
-      );
-    }
-  );
-}
-function from_square(width, height, square) {
-  return guard(
-    width < 0,
-    new Error("width must be positive"),
-    () => {
-      return guard(
-        height < 0,
-        new Error("height must be positive"),
-        () => {
-          return guard(
-            square > width * height,
-            new Error(
-              "square (" + to_string(square) + ") must be less than width (" + to_string(
-                width
-              ) + ") *height (" + to_string(height) + ")"
-            ),
-            () => {
-              return new Ok(
-                new Bitboard(width, height, bitwise_shift_left(1, square))
-              );
-            }
-          );
-        }
-      );
-    }
-  );
-}
-function to_squares(b) {
-  let result = (() => {
-    let _pipe = range(0, b.width * b.height - 1);
-    return fold_until(
-      _pipe,
-      [b.val, toList([])],
-      (acc, i) => {
-        let board2 = acc[0];
-        let l = acc[1];
-        let l$1 = (() => {
-          let $2 = bitwise_and(1, board2) > 0;
-          if ($2) {
-            return prepend(i, l);
-          } else {
-            return l;
-          }
-        })();
-        let board$1 = bitwise_shift_right(board2, 1);
-        let $ = board$1 > 0;
-        if ($) {
-          return new Continue([board$1, l$1]);
-        } else {
-          return new Stop([board$1, l$1]);
-        }
-      }
-    );
-  })();
-  return result[1];
-}
-function int_full_mask(b) {
-  return bitwise_shift_left(1, b.width * b.height) - 1;
-}
-function first_file(loop$bitboard, loop$counter, loop$val) {
-  while (true) {
-    let bitboard = loop$bitboard;
-    let counter = loop$counter;
-    let val = loop$val;
-    let $ = counter >= bitboard.height;
-    if ($) {
-      let _record = bitboard;
-      return new Bitboard(_record.width, _record.height, val);
-    } else {
-      loop$bitboard = bitboard;
-      loop$counter = counter + 1;
-      loop$val = bitwise_or(
-        bitwise_shift_left(1, counter * bitboard.width),
-        val
-      );
-    }
-  }
-}
-function file(bitboard, file_no) {
-  return guard(
-    file_no < 0,
-    new Error("file_no must be positive"),
-    () => {
-      return guard(
-        file_no >= bitboard.width,
-        new Error("file_no must be less than bitboard.width"),
-        () => {
-          let first_file$1 = first_file(bitboard, 0, 0);
-          let file$1 = bitwise_shift_left(first_file$1.val, file_no);
-          return new Ok(
-            (() => {
-              let _record = bitboard;
-              return new Bitboard(_record.width, _record.height, file$1);
-            })()
-          );
-        }
-      );
-    }
-  );
-}
-function bitboard_and(bitboard_1, bitboard_2) {
-  let $ = validate_equal_dimensions(bitboard_1, bitboard_2);
-  if (!$.isOk()) {
-    let err = $[0];
-    return new Error(err);
-  } else {
-    return new Ok(
-      (() => {
-        let _record = bitboard_1;
-        return new Bitboard(
-          _record.width,
-          _record.height,
-          bitwise_and(bitboard_1.val, bitboard_2.val)
-        );
-      })()
-    );
-  }
-}
-function bitboard_or(bitboard_1, bitboard_2) {
-  let $ = validate_equal_dimensions(bitboard_1, bitboard_2);
-  if (!$.isOk()) {
-    let err = $[0];
-    return new Error(err);
-  } else {
-    return new Ok(
-      (() => {
-        let _record = bitboard_1;
-        return new Bitboard(
-          _record.width,
-          _record.height,
-          bitwise_or(bitboard_1.val, bitboard_2.val)
-        );
-      })()
-    );
-  }
-}
-function bitboard_xor(bitboard_1, bitboard_2) {
-  let $ = validate_equal_dimensions(bitboard_1, bitboard_2);
-  if (!$.isOk()) {
-    let err = $[0];
-    return new Error(err);
-  } else {
-    return new Ok(
-      (() => {
-        let _record = bitboard_1;
-        return new Bitboard(
-          _record.width,
-          _record.height,
-          bitwise_exclusive_or(bitboard_1.val, bitboard_2.val)
-        );
-      })()
-    );
-  }
-}
-function shift_north_unvalidated(bitboard, i) {
-  let val = (() => {
-    let _pipe = bitboard.val;
-    let _pipe$1 = bitwise_shift_left(_pipe, i * bitboard.width);
-    return bitwise_and(_pipe$1, int_full_mask(bitboard));
-  })();
-  let _record = bitboard;
-  return new Bitboard(_record.width, _record.height, val);
-}
-function shift_north(bitboard, i) {
-  return guard(
-    i === 0,
-    new Ok(bitboard),
-    () => {
-      return guard(
-        i < 0,
-        new Error("shift_north by must be >= 0"),
-        () => {
-          return new Ok(shift_north_unvalidated(bitboard, i));
-        }
-      );
-    }
-  );
-}
-function shift_west_unvalidated(bitboard, i) {
-  let mask2 = (() => {
-    let _pipe = range(0, i - 1);
-    return fold(
-      _pipe,
-      0,
-      (m, i2) => {
-        let $ = file(bitboard, i2);
-        if (!$.isOk()) {
-          throw makeError(
-            "let_assert",
-            "bibi/bitboard",
-            635,
-            "",
-            "Pattern match failed, no pattern matched the value.",
-            { value: $ }
-          );
-        }
-        let r = $[0];
-        return bitwise_or(m, r.val);
-      }
-    );
-  })();
-  let updated_val = bitboard.val - bitwise_and(mask2, bitboard.val);
-  let val = (() => {
-    let _pipe = updated_val;
-    return bitwise_shift_right(_pipe, i);
-  })();
-  let _record = bitboard;
-  return new Bitboard(_record.width, _record.height, val);
-}
-function shift_east_unvalidated(bitboard, i) {
-  let mask2 = (() => {
-    let _pipe = range(bitboard.width - 1, bitboard.width - i);
-    return fold(
-      _pipe,
-      0,
-      (m, i2) => {
-        let $ = file(bitboard, i2);
-        if (!$.isOk()) {
-          throw makeError(
-            "let_assert",
-            "bibi/bitboard",
-            667,
-            "",
-            "Pattern match failed, no pattern matched the value.",
-            { value: $ }
-          );
-        }
-        let r = $[0];
-        return bitwise_or(m, r.val);
-      }
-    );
-  })();
-  let updated_val = bitboard.val - bitwise_and(mask2, bitboard.val);
-  let val = (() => {
-    let _pipe = updated_val;
-    return bitwise_shift_left(_pipe, i);
-  })();
-  let _record = bitboard;
-  return new Bitboard(_record.width, _record.height, val);
-}
-function shift_east(bitboard, i) {
-  return guard(
-    i === 0,
-    new Ok(bitboard),
-    () => {
-      return guard(
-        i < 0,
-        new Error("shift_east by must be >= 0"),
-        () => {
-          return guard(
-            i >= bitboard.width,
-            new Error("shift_east by must be < bitboard.width"),
-            () => {
-              return new Ok(shift_east_unvalidated(bitboard, i));
-            }
-          );
-        }
-      );
-    }
-  );
-}
-function shift_northeast(bitboard, i) {
-  return guard(
-    i === 0,
-    new Ok(bitboard),
-    () => {
-      return guard(
-        i < 0,
-        new Error("shift_northeast by must be >= 0"),
-        () => {
-          let _pipe = bitboard;
-          let _pipe$1 = shift_east_unvalidated(_pipe, i);
-          let _pipe$2 = shift_north_unvalidated(_pipe$1, i);
-          return new Ok(_pipe$2);
-        }
-      );
-    }
-  );
-}
-function shift_northwest(bitboard, i) {
-  return guard(
-    i === 0,
-    new Ok(bitboard),
-    () => {
-      return guard(
-        i < 0,
-        new Error("shift_northwest by must be >= 0"),
-        () => {
-          let _pipe = bitboard;
-          let _pipe$1 = shift_west_unvalidated(_pipe, i);
-          let _pipe$2 = shift_north_unvalidated(_pipe$1, i);
-          return new Ok(_pipe$2);
-        }
-      );
-    }
-  );
-}
-
 // build/dev/javascript/lustre/lustre/element/html.mjs
 function h1(attrs, children2) {
   return element("h1", attrs, children2);
@@ -5090,216 +5373,7 @@ function on_mouse_over(msg) {
   });
 }
 
-// build/dev/javascript/connect_4/logic.mjs
-function check_consecutive(bitboard, shift, iterations) {
-  let final_board = (() => {
-    let _pipe = range(0, iterations - 1);
-    return fold(
-      _pipe,
-      bitboard,
-      (board2, i) => {
-        let $ = shift(bitboard, i);
-        if (!$.isOk()) {
-          throw makeError(
-            "let_assert",
-            "logic",
-            47,
-            "",
-            "Pattern match failed, no pattern matched the value.",
-            { value: $ }
-          );
-        }
-        let shifted_board = $[0];
-        let $1 = bitboard_and(board2, shifted_board);
-        if (!$1.isOk()) {
-          throw makeError(
-            "let_assert",
-            "logic",
-            48,
-            "",
-            "Pattern match failed, no pattern matched the value.",
-            { value: $1 }
-          );
-        }
-        let board$1 = $1[0];
-        return board$1;
-      }
-    );
-  })();
-  return final_board.val > 0;
-}
-function check_win(board2) {
-  let _pipe = toList([
-    shift_north,
-    shift_east,
-    shift_northeast,
-    shift_northwest
-  ]);
-  let _pipe$1 = map(
-    _pipe,
-    (shift) => {
-      return check_consecutive(board2, shift, 4);
-    }
-  );
-  return any(_pipe$1, (bool3) => {
-    return bool3;
-  });
-}
-var connect_4_width = 7;
-function available_moves(full_board) {
-  let _pipe = range(0, connect_4_width - 1);
-  return fold(
-    _pipe,
-    new$2(),
-    (moves, i) => {
-      let $ = file(full_board, i);
-      if (!$.isOk()) {
-        throw makeError(
-          "let_assert",
-          "logic",
-          16,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: $ }
-        );
-      }
-      let mask2 = $[0];
-      let $1 = bitboard_and(mask2, full_board);
-      if (!$1.isOk()) {
-        throw makeError(
-          "let_assert",
-          "logic",
-          17,
-          "",
-          "Pattern match failed, no pattern matched the value.",
-          { value: $1 }
-        );
-      }
-      let file2 = $1[0];
-      let $2 = isEqual(mask2, file2);
-      if ($2) {
-        return moves;
-      } else {
-        return insert2(moves, i);
-      }
-    }
-  );
-}
-var connect_4_height = 6;
-function get_move(active, inactive, column) {
-  let $ = bitboard_or(active, inactive);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "logic",
-      30,
-      "get_move",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let full_board = $[0];
-  let $1 = file(full_board, column);
-  if (!$1.isOk()) {
-    throw makeError(
-      "let_assert",
-      "logic",
-      31,
-      "get_move",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $1 }
-    );
-  }
-  let mask2 = $1[0];
-  let $2 = bitboard_and(full_board, mask2);
-  if (!$2.isOk()) {
-    throw makeError(
-      "let_assert",
-      "logic",
-      32,
-      "get_move",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $2 }
-    );
-  }
-  let col = $2[0];
-  let $3 = bitboard_xor(col, mask2);
-  if (!$3.isOk()) {
-    throw makeError(
-      "let_assert",
-      "logic",
-      33,
-      "get_move",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $3 }
-    );
-  }
-  let empty_slots = $3[0];
-  let $4 = (() => {
-    let _pipe = empty_slots;
-    let _pipe$1 = to_squares(_pipe);
-    return last(_pipe$1);
-  })();
-  if (!$4.isOk()) {
-    throw makeError(
-      "let_assert",
-      "logic",
-      34,
-      "get_move",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $4 }
-    );
-  }
-  let square = $4[0];
-  let $5 = from_square(connect_4_width, connect_4_height, square);
-  if (!$5.isOk()) {
-    throw makeError(
-      "let_assert",
-      "logic",
-      35,
-      "get_move",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $5 }
-    );
-  }
-  let move = $5[0];
-  return move;
-}
-
 // build/dev/javascript/connect_4/views/game.mjs
-var Human = class extends CustomType {
-};
-var AI = class extends CustomType {
-};
-var X = class extends CustomType {
-  constructor(player) {
-    super();
-    this.player = player;
-  }
-};
-var O = class extends CustomType {
-  constructor(player) {
-    super();
-    this.player = player;
-  }
-};
-var TurnState = class extends CustomType {
-  constructor(turn, board2) {
-    super();
-    this.turn = turn;
-    this.board = board2;
-  }
-};
-var Win = class extends CustomType {
-  constructor(t) {
-    super();
-    this.t = t;
-  }
-};
-var Draw = class extends CustomType {
-};
-var Continue2 = class extends CustomType {
-};
 var DebugLog = class extends CustomType {
   constructor(move_count, turn, state) {
     super();
@@ -5308,24 +5382,42 @@ var DebugLog = class extends CustomType {
     this.state = state;
   }
 };
-var Model2 = class extends CustomType {
-  constructor(active, inactive, state, move_counter, move_history, highlight_column) {
+var Human = class extends CustomType {
+};
+var AI = class extends CustomType {
+};
+var PlayerTypes = class extends CustomType {
+  constructor(red, yellow) {
     super();
-    this.active = active;
-    this.inactive = inactive;
-    this.state = state;
+    this.red = red;
+    this.yellow = yellow;
+  }
+};
+var Model2 = class extends CustomType {
+  constructor(game, player_types, move_counter, move_history, highlight_column) {
+    super();
+    this.game = game;
+    this.player_types = player_types;
     this.move_counter = move_counter;
     this.move_history = move_history;
     this.highlight_column = highlight_column;
   }
 };
-function new$4(x, o) {
+function get_active_player_type(model) {
+  let $ = model.game.active.turn;
+  if ($ instanceof Red) {
+    return model.player_types.red;
+  } else {
+    return model.player_types.yellow;
+  }
+}
+function new$4(red, yellow) {
   let $ = new$3(connect_4_width, connect_4_height);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "views/game",
-      61,
+      56,
       "new",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -5333,9 +5425,12 @@ function new$4(x, o) {
   }
   let bitboard = $[0];
   return new Model2(
-    new TurnState(new X(x), bitboard),
-    new TurnState(new O(o), bitboard),
-    new Continue2(),
+    new Game(
+      new Player(new Red(), bitboard),
+      new Player(new Yellow(), bitboard),
+      new Continue2()
+    ),
+    new PlayerTypes(red, yellow),
     0,
     new_map(),
     -1
@@ -5345,17 +5440,17 @@ function get_move_api(model) {
   let url = "http://localhost:8000/move";
   let req_body = (() => {
     let _pipe = (() => {
-      let $ = model.active.turn;
-      if ($ instanceof X) {
+      let $ = model.game.active.turn;
+      if ($ instanceof Red) {
         return toList([
-          ["x", int3(model.active.board.val)],
-          ["o", int3(model.inactive.board.val)],
+          ["x", int3(model.game.active.board.val)],
+          ["o", int3(model.game.inactive.board.val)],
           ["play_for", string3("x")]
         ]);
       } else {
         return toList([
-          ["x", int3(model.inactive.board.val)],
-          ["o", int3(model.active.board.val)],
+          ["x", int3(model.game.inactive.board.val)],
+          ["o", int3(model.game.active.board.val)],
           ["play_for", string3("o")]
         ]);
       }
@@ -5380,106 +5475,28 @@ function get_move_api(model) {
     )
   );
 }
-function update_game(model, column) {
-  let active = model.active;
-  let inactive = model.inactive;
-  let $ = bitboard_or(active.board, inactive.board);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "views/game",
-      107,
-      "update_game",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
+function update_model(model, column) {
+  let $ = update_game(model.game, column);
+  let updated_game = $[0];
+  let last_cell_updated = $[1];
+  let has_game_changed = !isEqual(updated_game, model.game);
+  if (has_game_changed) {
+    let _record = model;
+    return new Model2(
+      updated_game,
+      _record.player_types,
+      model.move_counter + 1,
+      insert(
+        model.move_history,
+        last_cell_updated,
+        new DebugLog(
+          model.move_counter,
+          model.game.active.turn,
+          updated_game.state
+        )
+      ),
+      model.highlight_column
     );
-  }
-  let full_board = $[0];
-  let moves = available_moves(full_board);
-  let is_legal = contains(moves, column);
-  if (is_legal) {
-    let move = get_move(active.board, inactive.board, column);
-    let $1 = bitboard_or(move, active.board);
-    if (!$1.isOk()) {
-      throw makeError(
-        "let_assert",
-        "views/game",
-        114,
-        "update_game",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $1 }
-      );
-    }
-    let updated_board = $1[0];
-    let $2 = bitboard_or(updated_board, inactive.board);
-    if (!$2.isOk()) {
-      throw makeError(
-        "let_assert",
-        "views/game",
-        115,
-        "update_game",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $2 }
-      );
-    }
-    let updated_full_board = $2[0];
-    let $3 = (() => {
-      let _pipe = to_squares(move);
-      return first(_pipe);
-    })();
-    if (!$3.isOk()) {
-      throw makeError(
-        "let_assert",
-        "views/game",
-        117,
-        "update_game",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $3 }
-      );
-    }
-    let cell_id = $3[0];
-    let $4 = check_win(updated_board);
-    let $5 = size(available_moves(updated_full_board));
-    if ($4) {
-      return new Model2(
-        new TurnState(inactive.turn, inactive.board),
-        new TurnState(active.turn, updated_board),
-        new Win(active.turn),
-        model.move_counter,
-        insert(
-          model.move_history,
-          cell_id,
-          new DebugLog(model.move_counter, active.turn, new Win(active.turn))
-        ),
-        model.highlight_column
-      );
-    } else if (!$4 && $5 === 0) {
-      return new Model2(
-        inactive,
-        new TurnState(active.turn, updated_board),
-        new Draw(),
-        model.move_counter,
-        insert(
-          model.move_history,
-          cell_id,
-          new DebugLog(model.move_counter, active.turn, new Draw())
-        ),
-        model.highlight_column
-      );
-    } else {
-      return new Model2(
-        inactive,
-        new TurnState(active.turn, updated_board),
-        new Continue2(),
-        model.move_counter + 1,
-        insert(
-          model.move_history,
-          cell_id,
-          new DebugLog(model.move_counter, active.turn, new Continue2())
-        ),
-        model.highlight_column
-      );
-    }
   } else {
     return model;
   }
@@ -5487,9 +5504,8 @@ function update_game(model, column) {
 function update_highlighted_column(model, column) {
   let _record = model;
   return new Model2(
-    _record.active,
-    _record.inactive,
-    _record.state,
+    _record.game,
+    _record.player_types,
     _record.move_counter,
     _record.move_history,
     column
@@ -5498,9 +5514,8 @@ function update_highlighted_column(model, column) {
 function update_clear_highlighted_column(model) {
   let _record = model;
   return new Model2(
-    _record.active,
-    _record.inactive,
-    _record.state,
+    _record.game,
+    _record.player_types,
     _record.move_counter,
     _record.move_history,
     -1
@@ -5508,7 +5523,7 @@ function update_clear_highlighted_column(model) {
 }
 function header(model) {
   let class$2 = (() => {
-    let $ = model.state;
+    let $ = model.game.state;
     if ($ instanceof Win) {
       return "win";
     } else if ($ instanceof Draw) {
@@ -5518,24 +5533,24 @@ function header(model) {
     }
   })();
   let text2 = (() => {
-    let $ = model.state;
+    let $ = model.game.state;
     if ($ instanceof Win) {
       let winner = $.t;
       return "Winner is " + (() => {
-        if (winner instanceof O) {
-          return "Yellow";
-        } else {
+        if (winner instanceof Red) {
           return "Red";
+        } else {
+          return "Yellow";
         }
       })();
     } else if ($ instanceof Draw) {
       return "Draw";
     } else {
-      let $1 = model.active.turn;
-      if ($1 instanceof O) {
-        return "Yellow's turn";
-      } else {
+      let $1 = model.game.active.turn;
+      if ($1 instanceof Red) {
         return "Red's turn";
+      } else {
+        return "Yellow's turn";
       }
     }
   })();
@@ -5563,15 +5578,15 @@ function convert_bitboard_to_set(bitboard) {
   return from_list2(to_squares(bitboard));
 }
 function turn_to_color(t) {
-  if (t instanceof X) {
+  if (t instanceof Red) {
     return "red";
   } else {
     return "yellow";
   }
 }
 function board(model) {
-  let active_board = convert_bitboard_to_set(model.active.board);
-  let inactive_board = convert_bitboard_to_set(model.inactive.board);
+  let active_board = convert_bitboard_to_set(model.game.active.board);
+  let inactive_board = convert_bitboard_to_set(model.game.inactive.board);
   let board_rows = (() => {
     let _pipe = range(connect_4_height - 1, 0);
     return fold(
@@ -5588,9 +5603,9 @@ function board(model) {
                 let $ = contains(active_board, cell_id);
                 let $1 = contains(inactive_board, cell_id);
                 if ($ && !$1) {
-                  return turn_to_color(model.active.turn);
+                  return turn_to_color(model.game.active.turn);
                 } else if (!$ && $1) {
-                  return turn_to_color(model.inactive.turn);
+                  return turn_to_color(model.game.inactive.turn);
                 } else {
                   return "white";
                 }
@@ -5621,8 +5636,8 @@ function board(model) {
                 }
               })();
               let cell_attributes$2 = (() => {
-                let $ = isEqual(model.active.turn.player, new Human()) && isEqual(
-                  model.state,
+                let $ = isEqual(get_active_player_type(model), new Human()) && isEqual(
+                  model.game.state,
                   new Continue2()
                 );
                 if ($) {
@@ -5653,7 +5668,7 @@ function board(model) {
   return div(toList([class$("board")]), board_rows);
 }
 function turn_to_string(t) {
-  if (t instanceof X) {
+  if (t instanceof Red) {
     return "Red";
   } else {
     return "Yellow";
@@ -5736,7 +5751,7 @@ function view2() {
 // build/dev/javascript/connect_4/connect_4.mjs
 var MainMenu = class extends CustomType {
 };
-var Game = class extends CustomType {
+var Game2 = class extends CustomType {
   constructor(model) {
     super();
     this.model = model;
@@ -5746,11 +5761,11 @@ function new$5(message) {
   if (message instanceof GotoMainMenu) {
     return [new MainMenu(), none()];
   } else if (message instanceof NewGame) {
-    return [new Game(new$4(new Human(), new Human())), none()];
+    return [new Game2(new$4(new Human(), new Human())), none()];
   } else if (message instanceof NewOnlineGame) {
-    return [new Game(new$4(new Human(), new AI())), none()];
+    return [new Game2(new$4(new Human(), new AI())), none()];
   } else {
-    throw makeError("panic", "connect_4", 28, "new", "should not happen", {});
+    throw makeError("panic", "connect_4", 30, "new", "should not happen", {});
   }
 }
 function update(model, msg) {
@@ -5760,46 +5775,46 @@ function update(model, msg) {
     return new$5(msg);
   } else if (msg instanceof NewOnlineGame) {
     return new$5(msg);
-  } else if (model instanceof Game && msg instanceof Move) {
+  } else if (model instanceof Game2 && msg instanceof Move) {
     let game_model = model.model;
     let column = msg.column;
-    let updated_game = update_game(game_model, column);
-    let $ = updated_game.state;
-    let $1 = updated_game.active.turn.player;
+    let updated_game = update_model(game_model, column);
+    let $ = updated_game.game.state;
+    let $1 = get_active_player_type(updated_game);
     if ($ instanceof Continue2 && $1 instanceof AI) {
-      return [new Game(updated_game), get_move_api(updated_game)];
+      return [new Game2(updated_game), get_move_api(updated_game)];
     } else {
-      return [new Game(updated_game), none()];
+      return [new Game2(updated_game), none()];
     }
-  } else if (model instanceof Game && msg instanceof ReceivedMove) {
+  } else if (model instanceof Game2 && msg instanceof ReceivedMove) {
     let game_model = model.model;
     let result = msg[0];
     if (!result.isOk()) {
       throw makeError(
         "let_assert",
         "connect_4",
-        53,
+        55,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: result }
       );
     }
     let column = result[0];
-    let updated_game = update_game(game_model, column);
-    return [new Game(updated_game), none()];
-  } else if (model instanceof Game && msg instanceof HighlightColumn) {
+    let updated_game = update_model(game_model, column);
+    return [new Game2(updated_game), none()];
+  } else if (model instanceof Game2 && msg instanceof HighlightColumn) {
     let game_model = model.model;
     let column = msg.column;
     let updated_game = update_highlighted_column(game_model, column);
-    return [new Game(updated_game), none()];
-  } else if (model instanceof Game && msg instanceof UnhighlightColumn) {
+    return [new Game2(updated_game), none()];
+  } else if (model instanceof Game2 && msg instanceof UnhighlightColumn) {
     let game_model = model.model;
     let updated_game = update_clear_highlighted_column(game_model);
-    return [new Game(updated_game), none()];
+    return [new Game2(updated_game), none()];
   } else {
-    echo(model, "src/connect_4.gleam", 68);
-    echo(msg, "src/connect_4.gleam", 69);
-    throw makeError("panic", "connect_4", 70, "update", "impossible state", {});
+    echo(model, "src/connect_4.gleam", 70);
+    echo(msg, "src/connect_4.gleam", 71);
+    throw makeError("panic", "connect_4", 72, "update", "impossible state", {});
   }
 }
 function view3(model) {
@@ -5817,7 +5832,7 @@ function main() {
     throw makeError(
       "let_assert",
       "connect_4",
-      11,
+      13,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -5874,17 +5889,17 @@ function echo$inspectString(str) {
 }
 function echo$inspectDict(map7) {
   let body = "dict.from_list([";
-  let first3 = true;
+  let first2 = true;
   let key_value_pairs = [];
   map7.forEach((value, key) => {
     key_value_pairs.push([key, value]);
   });
   key_value_pairs.sort();
   key_value_pairs.forEach(([key, value]) => {
-    if (!first3)
+    if (!first2)
       body = body + ", ";
     body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value) + ")";
-    first3 = false;
+    first2 = false;
   });
   return body + "])";
 }

@@ -8,39 +8,43 @@ import gleeunit/should
 import bibi/bitboard as b
 
 import app/router as r
+import shared as s
 
 pub fn main() {
   gleeunit.main()
 }
 
 pub fn game_model_decoder_test() {
-  let assert Ok(bitboard) = b.new(r.connect_4_width, r.connect_4_height)
+  let assert Ok(bitboard) = b.new(s.connect_4_width, s.connect_4_height)
   [
     #(
       1,
       1,
       "x",
-      r.Game(
-        r.X(b.Bitboard(..bitboard, val: 1)),
-        r.O(b.Bitboard(..bitboard, val: 1)),
+      s.Game(
+        s.Player(s.Red, b.Bitboard(..bitboard, val: 1)),
+        s.Player(s.Yellow, b.Bitboard(..bitboard, val: 1)),
+        s.Continue,
       ),
     ),
     #(
       2,
       1,
       "x",
-      r.Game(
-        r.X(b.Bitboard(..bitboard, val: 2)),
-        r.O(b.Bitboard(..bitboard, val: 1)),
+      s.Game(
+        s.Player(s.Red, b.Bitboard(..bitboard, val: 2)),
+        s.Player(s.Yellow, b.Bitboard(..bitboard, val: 1)),
+        s.Continue,
       ),
     ),
     #(
       2,
       1,
       "o",
-      r.Game(
-        r.X(b.Bitboard(..bitboard, val: 1)),
-        r.O(b.Bitboard(..bitboard, val: 2)),
+      s.Game(
+        s.Player(s.Yellow, b.Bitboard(..bitboard, val: 1)),
+        s.Player(s.Red, b.Bitboard(..bitboard, val: 2)),
+        s.Continue,
       ),
     ),
   ]

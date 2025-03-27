@@ -14,55 +14,49 @@ import lustre_http
 
 import bibi/bitboard as b
 
-import logic.{
-  available_moves, check_win, connect_4_height, connect_4_width, get_move,
+import shared.{
+  type Game, type GameState, type Player, type Turn, Continue, Draw, Game,
+  Player, Red, Win, Yellow, connect_4_height, connect_4_width, update_game,
 }
 
 import messages as msg
 
 // model
+pub type DebugLog {
+  DebugLog(move_count: Int, turn: Turn, state: GameState)
+}
 
 pub type PlayerType {
   Human
   AI
 }
 
-pub type Turn {
-  X(player: PlayerType)
-  O(player: PlayerType)
-}
-
-pub type TurnState {
-  TurnState(turn: Turn, board: b.Bitboard)
-}
-
-pub type GameState {
-  Win(t: Turn)
-  Draw
-  Continue
-}
-
-pub type DebugLog {
-  DebugLog(move_count: Int, turn: Turn, state: GameState)
+pub type PlayerTypes {
+  PlayerTypes(red: PlayerType, yellow: PlayerType)
 }
 
 pub type Model {
   Model(
-    active: TurnState,
-    inactive: TurnState,
-    state: GameState,
+    game: Game,
+    player_types: PlayerTypes,
     move_counter: Int,
     move_history: Dict(Int, DebugLog),
     highlight_column: Int,
   )
 }
 
-pub fn new(x: PlayerType, o: PlayerType) -> Model {
+pub fn get_active_player_type(model: Model) -> PlayerType {
+  case model.game.active.turn {
+    Red -> model.player_types.red
+    Yellow -> model.player_types.yellow
+  }
+}
+
+pub fn new(red: PlayerType, yellow: PlayerType) -> Model {
   let assert Ok(bitboard) = b.new(connect_4_width, connect_4_height)
   Model(
-    TurnState(X(x), bitboard),
-    TurnState(O(o), bitboard),
-    Continue,
+    Game(Player(Red, bitboard), Player(Yellow, bitboard), Continue),
+    PlayerTypes(red, yellow),
     0,
     dict.new(),
     -1,
@@ -75,15 +69,15 @@ pub fn get_move_api(model: Model) {
   let url = "http://localhost:8000/move"
   // prepare json body
   let req_body =
-    case model.active.turn {
-      X(_) -> [
-        #("x", json.int(model.active.board.val)),
-        #("o", json.int(model.inactive.board.val)),
+    case model.game.active.turn {
+      Red -> [
+        #("x", json.int(model.game.active.board.val)),
+        #("o", json.int(model.game.inactive.board.val)),
         #("play_for", json.string("x")),
       ]
-      O(_) -> [
-        #("x", json.int(model.inactive.board.val)),
-        #("o", json.int(model.active.board.val)),
+      Yellow -> [
+        #("x", json.int(model.game.inactive.board.val)),
+        #("o", json.int(model.game.active.board.val)),
         #("play_for", json.string("o")),
       ]
     }
@@ -101,65 +95,26 @@ pub fn get_move_api(model: Model) {
   )
 }
 
-pub fn update_game(model: Model, column: Int) -> Model {
-  let active = model.active
-  let inactive = model.inactive
-  let assert Ok(full_board) = b.bitboard_or(active.board, inactive.board)
-
-  let moves = available_moves(full_board)
-  let is_legal = set.contains(moves, column)
-  case is_legal {
-    True -> {
-      let move = get_move(active.board, inactive.board, column)
-      let assert Ok(updated_board) = b.bitboard_or(move, active.board)
-      let assert Ok(updated_full_board) =
-        b.bitboard_or(updated_board, inactive.board)
-      let assert Ok(cell_id) = b.to_squares(move) |> list.first
-      case
-        check_win(updated_board),
-        set.size(available_moves(updated_full_board))
-      {
-        True, _ ->
-          Model(
-            TurnState(turn: inactive.turn, board: inactive.board),
-            TurnState(turn: active.turn, board: updated_board),
-            Win(active.turn),
+pub fn update_model(model: Model, column: Int) -> Model {
+  let #(updated_game, last_cell_updated) = update_game(model.game, column)
+  let has_game_changed = updated_game != model.game
+  case has_game_changed {
+    True ->
+      Model(
+        ..model,
+        game: updated_game,
+        move_counter: model.move_counter + 1,
+        move_history: dict.insert(
+          model.move_history,
+          last_cell_updated,
+          DebugLog(
             model.move_counter,
-            dict.insert(
-              model.move_history,
-              cell_id,
-              DebugLog(model.move_counter, active.turn, Win(active.turn)),
-            ),
-            model.highlight_column,
-          )
-        False, 0 ->
-          Model(
-            inactive,
-            TurnState(turn: active.turn, board: updated_board),
-            Draw,
-            model.move_counter,
-            dict.insert(
-              model.move_history,
-              cell_id,
-              DebugLog(model.move_counter, active.turn, Draw),
-            ),
-            model.highlight_column,
-          )
-        False, _ ->
-          Model(
-            inactive,
-            TurnState(turn: active.turn, board: updated_board),
-            Continue,
-            model.move_counter + 1,
-            dict.insert(
-              model.move_history,
-              cell_id,
-              DebugLog(model.move_counter, active.turn, Continue),
-            ),
-            model.highlight_column,
-          )
-      }
-    }
+            model.game.active.turn,
+            updated_game.state,
+          ),
+        ),
+        highlight_column: model.highlight_column,
+      )
     False -> model
   }
 }
@@ -173,27 +128,35 @@ pub fn update_clear_highlighted_column(model: Model) {
 }
 
 // View
+pub fn view(model: Model) -> element.Element(_) {
+  html.div([attribute.class("game")], [
+    html.h1([], [element.text("VS AI")]),
+    header(model),
+    board(model),
+    debug_log(model),
+  ])
+}
 
-pub fn header(model: Model) -> element.Element(_) {
-  let class = case model.state {
+fn header(model: Model) -> element.Element(_) {
+  let class = case model.game.state {
     Win(_) -> "win"
     Draw -> "draw"
     Continue -> "continue"
   }
-  let text = case model.state {
+  let text = case model.game.state {
     Win(winner) ->
       "Winner is "
       <> {
         case winner {
-          O(_) -> "Yellow"
-          X(_) -> "Red"
+          Red -> "Red"
+          Yellow -> "Yellow"
         }
       }
     Draw -> "Draw"
     Continue ->
-      case model.active.turn {
-        O(_) -> "Yellow's turn"
-        X(_) -> "Red's turn"
+      case model.game.active.turn {
+        Red -> "Red's turn"
+        Yellow -> "Yellow's turn"
       }
   }
   html.div([attribute.class("header" <> " " <> class)], [
@@ -207,56 +170,20 @@ pub fn header(model: Model) -> element.Element(_) {
   ])
 }
 
-pub fn move_picker(model: Model) -> element.Element(_) {
-  let assert Ok(full_board) =
-    b.bitboard_or(model.active.board, model.inactive.board)
-  let game_ended = case model.state {
-    Win(_) -> True
-    Draw -> True
-    _ -> False
-  }
-
-  let buttons =
-    list.range(0, connect_4_width - 1)
-    |> list.map(fn(i) {
-      html.button(
-        [
-          attribute.class("drop-button"),
-          event.on_click(msg.Move(i)),
-          attribute.disabled(
-            game_ended
-            || !set.contains(available_moves(full_board), i)
-            || model.active.turn.player == AI,
-          ),
-        ],
-        [element.text(" ⬇ ")],
-      )
-    })
-
-  html.div(
-    [
-      attribute.class("board"),
-      attribute.class("move-picker"),
-      attribute.class("board"),
-    ],
-    buttons,
-  )
-}
-
 fn convert_bitboard_to_set(bitboard: b.Bitboard) {
   set.from_list(b.to_squares(bitboard))
 }
 
 fn turn_to_color(t: Turn) -> String {
   case t {
-    X(_) -> "red"
-    O(_) -> "yellow"
+    Red -> "red"
+    Yellow -> "yellow"
   }
 }
 
 pub fn board(model: Model) -> element.Element(_) {
-  let active_board = convert_bitboard_to_set(model.active.board)
-  let inactive_board = convert_bitboard_to_set(model.inactive.board)
+  let active_board = convert_bitboard_to_set(model.game.active.board)
+  let inactive_board = convert_bitboard_to_set(model.game.inactive.board)
   let board_rows =
     list.range(connect_4_height - 1, 0)
     |> list.fold([], fn(cells, i) {
@@ -268,8 +195,8 @@ pub fn board(model: Model) -> element.Element(_) {
             set.contains(active_board, cell_id),
             set.contains(inactive_board, cell_id)
           {
-            True, False -> turn_to_color(model.active.turn)
-            False, True -> turn_to_color(model.inactive.turn)
+            True, False -> turn_to_color(model.game.active.turn)
+            False, True -> turn_to_color(model.game.inactive.turn)
             _, _ -> "white"
           }
           let text = case dict.get(model.move_history, cell_id) {
@@ -286,7 +213,8 @@ pub fn board(model: Model) -> element.Element(_) {
             False -> cell_attributes
           }
           let cell_attributes = case
-            model.active.turn.player == Human && model.state == Continue
+            get_active_player_type(model) == Human
+            && model.game.state == Continue
           {
             True -> list.append(cell_attributes, [event.on_click(msg.Move(j))])
             False -> cell_attributes
@@ -304,8 +232,8 @@ pub fn board(model: Model) -> element.Element(_) {
 
 fn turn_to_string(t: Turn) {
   case t {
-    X(_) -> "Red"
-    O(_) -> "Yellow"
+    Red -> "Red"
+    Yellow -> "Yellow"
   }
 }
 
@@ -334,13 +262,4 @@ fn debug_log(model: Model) -> element.Element(_) {
     })
 
   html.ul([], logs)
-}
-
-pub fn view(model: Model) -> element.Element(_) {
-  html.div([attribute.class("game")], [
-    html.h1([], [element.text("VS AI")]),
-    header(model),
-    board(model),
-    debug_log(model),
-  ])
 }
