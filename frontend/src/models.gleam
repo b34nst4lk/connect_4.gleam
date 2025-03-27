@@ -15,7 +15,7 @@ pub type DebugLog {
 
 pub type PlayerType {
   Human
-  AI
+  AI(bot_name: String)
 }
 
 pub type PlayerTypes {
@@ -54,11 +54,10 @@ pub type Message {
   // Main menu
   GotoMainMenu
   SetupAIvsAI
+  ChooseBot(t: Turn, bot_name: String)
 
-  // New Game
+  // Game
   NewGame(player_types: PlayerTypes)
-
-  // Shared messages
   Move(column: Int)
   ReceivedMove(Result(Int, lustre_http.HttpError))
   HighlightColumn(column: Int)

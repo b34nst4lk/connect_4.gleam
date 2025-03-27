@@ -27,8 +27,8 @@ import models.{
 
 // Update
 
-pub fn get_move_api(model: GameModel) {
-  let url = "http://localhost:8000/move"
+pub fn get_move_api(model: GameModel, bot_name: String) {
+  let url = "http://localhost:8000/" <> bot_name
   // prepare json body
   let req_body =
     case model.game.active.turn {
@@ -92,7 +92,7 @@ pub fn update_clear_highlighted_column(model: GameModel) {
 // View
 pub fn view(model: GameModel) -> element.Element(_) {
   html.div([attribute.class("game")], [
-    html.h1([], [element.text("VS AI")]),
+    html.h1([], [element.text("Connect 4 LOL")]),
     header(model),
     board(model),
     debug_log(model),

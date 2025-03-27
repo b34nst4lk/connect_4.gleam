@@ -2,7 +2,7 @@
 var CustomType = class {
   withFields(fields) {
     let properties = Object.keys(this).map(
-      (label) => label in fields ? fields[label] : this[label]
+      (label2) => label2 in fields ? fields[label2] : this[label2]
     );
     return new this.constructor(...properties);
   }
@@ -2543,11 +2543,11 @@ function parse(json, decoder) {
 function to_string2(json) {
   return json_to_string(json);
 }
-function string3(input) {
-  return identity2(input);
+function string3(input2) {
+  return identity2(input2);
 }
-function int3(input) {
-  return identity2(input);
+function int3(input2) {
+  return identity2(input2);
 }
 function object2(entries) {
   return object(entries);
@@ -2679,11 +2679,23 @@ function handlers(element2) {
 function attribute(name, value) {
   return new Attribute(name, identity(value), false);
 }
+function property(name, value) {
+  return new Attribute(name, identity(value), true);
+}
 function on(name, handler) {
   return new Event("on" + name, handler);
 }
 function class$(name) {
   return attribute("class", name);
+}
+function type_(name) {
+  return attribute("type", name);
+}
+function checked(is_checked) {
+  return property("checked", is_checked);
+}
+function disabled(is_disabled) {
+  return property("disabled", is_disabled);
 }
 
 // build/dev/javascript/lustre/lustre/element.mjs
@@ -3065,8 +3077,8 @@ function lustreServerEventHandler(event2) {
   return {
     tag,
     data: include.reduce(
-      (data2, property) => {
-        const path = property.split(".");
+      (data2, property2) => {
+        const path = property2.split(".");
         for (let i = 0, o = data2, e = event2; i < path.length; i++) {
           if (i === path.length - 1) {
             o[path[i]] = e[path[i]];
@@ -3157,13 +3169,13 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
    */
-  static start({ init: init2, update: update2, view: view4 }, selector, flags) {
+  static start({ init: init2, update: update3, view: view4 }, selector, flags) {
     if (!is_browser())
       return new Error(new NotABrowser());
     const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
     if (!root)
       return new Error(new ElementNotFound(selector));
-    const app = new _LustreClientApplication(root, init2(flags), update2, view4);
+    const app = new _LustreClientApplication(root, init2(flags), update3, view4);
     return new Ok((action) => app.send(action));
   }
   /**
@@ -3174,10 +3186,10 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {LustreClientApplication}
    */
-  constructor(root, [init2, effects], update2, view4) {
+  constructor(root, [init2, effects], update3, view4) {
     this.root = root;
     this.#model = init2;
-    this.#update = update2;
+    this.#update = update3;
     this.#view = view4;
     this.#tickScheduled = window.setTimeout(
       () => this.#tick(effects.all.toArray(), true),
@@ -3293,18 +3305,18 @@ var LustreClientApplication = class _LustreClientApplication {
 };
 var start = LustreClientApplication.start;
 var LustreServerApplication = class _LustreServerApplication {
-  static start({ init: init2, update: update2, view: view4, on_attribute_change }, flags) {
+  static start({ init: init2, update: update3, view: view4, on_attribute_change }, flags) {
     const app = new _LustreServerApplication(
       init2(flags),
-      update2,
+      update3,
       view4,
       on_attribute_change
     );
     return new Ok((action) => app.send(action));
   }
-  constructor([model, effects], update2, view4, on_attribute_change) {
+  constructor([model, effects], update3, view4, on_attribute_change) {
     this.#model = model;
-    this.#update = update2;
+    this.#update = update3;
     this.#view = view4;
     this.#html = view4(model);
     this.#onAttributeChange = on_attribute_change;
@@ -3407,10 +3419,10 @@ var is_browser = () => globalThis.window && window.document;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init2, update2, view4, on_attribute_change) {
+  constructor(init2, update3, view4, on_attribute_change) {
     super();
     this.init = init2;
-    this.update = update2;
+    this.update = update3;
     this.view = view4;
     this.on_attribute_change = on_attribute_change;
   }
@@ -3423,8 +3435,8 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init2, update2, view4) {
-  return new App(init2, update2, view4, new None());
+function application(init2, update3, view4) {
+  return new App(init2, update3, view4, new None());
 }
 function start2(app, selector, flags) {
   return guard(
@@ -5318,6 +5330,10 @@ var DebugLog = class extends CustomType {
 var Human = class extends CustomType {
 };
 var AI = class extends CustomType {
+  constructor(bot_name) {
+    super();
+    this.bot_name = bot_name;
+  }
 };
 var PlayerTypes = class extends CustomType {
   constructor(red, yellow) {
@@ -5337,6 +5353,13 @@ var GameModel = class extends CustomType {
   }
 };
 var GotoMainMenu = class extends CustomType {
+};
+var ChooseBot = class extends CustomType {
+  constructor(t, bot_name) {
+    super();
+    this.t = t;
+    this.bot_name = bot_name;
+  }
 };
 var NewGame = class extends CustomType {
   constructor(player_types) {
@@ -5414,6 +5437,21 @@ function ul(attrs, children2) {
 function button(attrs, children2) {
   return element("button", attrs, children2);
 }
+function fieldset(attrs, children2) {
+  return element("fieldset", attrs, children2);
+}
+function form(attrs, children2) {
+  return element("form", attrs, children2);
+}
+function input(attrs) {
+  return element("input", attrs, toList([]));
+}
+function label(attrs, children2) {
+  return element("label", attrs, children2);
+}
+function legend(attrs, children2) {
+  return element("legend", attrs, children2);
+}
 
 // build/dev/javascript/lustre/lustre/event.mjs
 function on2(name, handler) {
@@ -5436,8 +5474,8 @@ function on_mouse_over(msg) {
 }
 
 // build/dev/javascript/connect_4/views/game.mjs
-function get_move_api(model) {
-  let url = "http://localhost:8000/move";
+function get_move_api(model, bot_name) {
+  let url = "http://localhost:8000/" + bot_name;
   let req_body = (() => {
     let _pipe = (() => {
       let $ = model.game.active.turn;
@@ -5717,7 +5755,7 @@ function view(model) {
   return div(
     toList([class$("game")]),
     toList([
-      h1(toList([]), toList([text("VS AI")])),
+      h1(toList([]), toList([text("Connect 4 LOL")])),
       header(model),
       board(model),
       debug_log(model)
@@ -5726,9 +5764,28 @@ function view(model) {
 }
 
 // build/dev/javascript/connect_4/views/main_menu.mjs
-function view2() {
+var Model2 = class extends CustomType {
+  constructor(red, yellow) {
+    super();
+    this.red = red;
+    this.yellow = yellow;
+  }
+};
+function new$4() {
+  return new Model2("", "");
+}
+function update(model, turn, bot_name) {
+  if (turn instanceof Red) {
+    let _record = model;
+    return new Model2(bot_name, _record.yellow);
+  } else {
+    let _record = model;
+    return new Model2(_record.red, bot_name);
+  }
+}
+function home_page() {
   return div(
-    toList([class$("stack")]),
+    toList([class$("vstack")]),
     toList([
       h1(toList([]), toList([text("CONNECT 4 LOL")])),
       button(
@@ -5741,125 +5798,85 @@ function view2() {
       ),
       button(
         toList([
-          on_click(new NewGame(new PlayerTypes(new Human(), new AI())))
+          on_click(
+            new NewGame(new PlayerTypes(new Human(), new AI("minimax/3")))
+          )
         ]),
         toList([text("VS AI")])
       ),
       button(
         toList([
-          on_click(new NewGame(new PlayerTypes(new AI(), new AI())))
+          on_click(
+            new NewGame(new PlayerTypes(new AI("move"), new AI("minimax/5")))
+          )
         ]),
         toList([text("AI VS AI")])
       )
     ])
   );
 }
-
-// build/dev/javascript/connect_4/connect_4.mjs
-var MainMenu = class extends CustomType {
-};
-var Game2 = class extends CustomType {
-  constructor(model) {
-    super();
-    this.model = model;
-  }
-};
-function new$4(message) {
-  if (message instanceof GotoMainMenu) {
-    return [new MainMenu(), none()];
-  } else if (message instanceof NewGame) {
-    let player_types = message.player_types;
-    let new_game$1 = new_game(player_types.red, player_types.yellow);
-    return [
-      new Game2(new_game$1),
-      (() => {
-        let $ = player_types.red;
-        if ($ instanceof Human) {
-          return none();
-        } else {
-          return get_move_api(new_game$1);
-        }
-      })()
-    ];
-  } else {
-    throw makeError("panic", "connect_4", 39, "new", "should not happen", {});
-  }
+function bot_radio_button(name, selected, turn) {
+  echo(name, "src/views/main_menu.gleam", 75);
+  echo(selected, "src/views/main_menu.gleam", 76);
+  return div(
+    toList([on_click(new ChooseBot(turn, name))]),
+    toList([
+      input(
+        toList([
+          type_("radio"),
+          checked(name === selected)
+        ])
+      ),
+      label(toList([]), toList([text(name)]))
+    ])
+  );
 }
-function update(model, msg) {
-  if (msg instanceof GotoMainMenu) {
-    return [new MainMenu(), none()];
-  } else if (msg instanceof NewGame) {
-    return new$4(msg);
-  } else if (model instanceof Game2 && msg instanceof Move) {
-    let game_model = model.model;
-    let column = msg.column;
-    let updated_game = update_model(game_model, column);
-    let $ = updated_game.game.state;
-    let $1 = get_active_player_type(updated_game);
-    if ($ instanceof Continue2 && $1 instanceof AI) {
-      return [new Game2(updated_game), get_move_api(updated_game)];
-    } else {
-      return [new Game2(updated_game), none()];
-    }
-  } else if (model instanceof Game2 && msg instanceof ReceivedMove) {
-    let game_model = model.model;
-    let result = msg[0];
-    if (!result.isOk()) {
-      throw makeError(
-        "let_assert",
-        "connect_4",
-        60,
-        "update",
-        "Pattern match failed, no pattern matched the value.",
-        { value: result }
-      );
-    }
-    let column = result[0];
-    let updated_game = update_model(game_model, column);
-    let $ = updated_game.game.state;
-    let $1 = get_active_player_type(updated_game);
-    if ($ instanceof Continue2 && $1 instanceof AI) {
-      return [new Game2(updated_game), get_move_api(updated_game)];
-    } else {
-      return [new Game2(updated_game), none()];
-    }
-  } else if (model instanceof Game2 && msg instanceof HighlightColumn) {
-    let game_model = model.model;
-    let column = msg.column;
-    let updated_game = update_highlighted_column(game_model, column);
-    return [new Game2(updated_game), none()];
-  } else if (model instanceof Game2 && msg instanceof UnhighlightColumn) {
-    let game_model = model.model;
-    let updated_game = update_clear_highlighted_column(game_model);
-    return [new Game2(updated_game), none()];
-  } else {
-    echo(model, "src/connect_4.gleam", 80);
-    echo(msg, "src/connect_4.gleam", 81);
-    throw makeError("panic", "connect_4", 82, "update", "impossible state", {});
-  }
+function player_setup(turn, selected) {
+  return form(
+    toList([class$("flex-1")]),
+    toList([
+      fieldset(
+        toList([class$("vstack")]),
+        toList([
+          legend(toList([]), toList([text("Choose a bot:")])),
+          bot_radio_button("minimax/1", selected, turn),
+          bot_radio_button("minimax/3", selected, turn),
+          bot_radio_button("minimax/5", selected, turn)
+        ])
+      )
+    ])
+  );
 }
-function view3(model) {
-  if (model instanceof MainMenu) {
-    return view2();
-  } else {
-    let game_model = model.model;
-    return view(game_model);
-  }
+function ai_match_config_pop_up(model) {
+  return div(
+    toList([class$("vstack")]),
+    toList([
+      div(
+        toList([class$("hstack")]),
+        toList([
+          player_setup(new Red(), model.red),
+          player_setup(new Yellow(), model.yellow)
+        ])
+      ),
+      button(
+        toList([
+          disabled(model.red === "" || model.yellow === ""),
+          on_click(
+            new NewGame(
+              new PlayerTypes(new AI(model.red), new AI(model.yellow))
+            )
+          )
+        ]),
+        toList([text("start")])
+      )
+    ])
+  );
 }
-function main() {
-  let app = application(new$4, update, view3);
-  let $ = start2(app, "#app", new GotoMainMenu());
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "connect_4",
-      16,
-      "main",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  return void 0;
+function view2(model) {
+  return div(
+    toList([]),
+    toList([home_page(), ai_match_config_pop_up(model)])
+  );
 }
 function echo(value, file2, line) {
   const grey = "\x1B[90m";
@@ -5925,9 +5942,9 @@ function echo$inspectDict(map7) {
   return body + "])";
 }
 function echo$inspectCustomType(record) {
-  const props = Object.keys(record).map((label) => {
-    const value = echo$inspect(record[label]);
-    return isNaN(parseInt(label)) ? `${label}: ${value}` : value;
+  const props = Object.keys(record).map((label2) => {
+    const value = echo$inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value}` : value;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -5999,6 +6016,270 @@ function echo$inspectBitArray(bitArray) {
   }
 }
 function echo$isDict(value) {
+  try {
+    return value instanceof Dict;
+  } catch {
+    return false;
+  }
+}
+
+// build/dev/javascript/connect_4/connect_4.mjs
+var MainMenu = class extends CustomType {
+  constructor(model) {
+    super();
+    this.model = model;
+  }
+};
+var Game2 = class extends CustomType {
+  constructor(model) {
+    super();
+    this.model = model;
+  }
+};
+function new$5(message) {
+  if (message instanceof GotoMainMenu) {
+    return [new MainMenu(new$4()), none()];
+  } else if (message instanceof NewGame) {
+    let player_types = message.player_types;
+    let new_game$1 = new_game(player_types.red, player_types.yellow);
+    return [
+      new Game2(new_game$1),
+      (() => {
+        let $ = player_types.red;
+        if ($ instanceof Human) {
+          return none();
+        } else {
+          let bot_name = $.bot_name;
+          return get_move_api(new_game$1, bot_name);
+        }
+      })()
+    ];
+  } else {
+    throw makeError("panic", "connect_4", 40, "new", "should not happen", {});
+  }
+}
+function update2(model, msg) {
+  if (msg instanceof GotoMainMenu) {
+    return [new MainMenu(new$4()), none()];
+  } else if (msg instanceof NewGame) {
+    return new$5(msg);
+  } else if (model instanceof MainMenu && msg instanceof ChooseBot) {
+    let model$1 = model.model;
+    let turn = msg.t;
+    let bot_name = msg.bot_name;
+    return [new MainMenu(update(model$1, turn, bot_name)), none()];
+  } else if (model instanceof Game2 && msg instanceof Move) {
+    let game_model = model.model;
+    let column = msg.column;
+    let updated_game = update_model(game_model, column);
+    let $ = updated_game.game.state;
+    let $1 = get_active_player_type(updated_game);
+    if ($ instanceof Continue2 && $1 instanceof AI) {
+      let bot_name = $1.bot_name;
+      return [new Game2(updated_game), get_move_api(updated_game, bot_name)];
+    } else {
+      return [new Game2(updated_game), none()];
+    }
+  } else if (model instanceof Game2 && msg instanceof ReceivedMove) {
+    let game_model = model.model;
+    let result = msg[0];
+    if (!result.isOk()) {
+      throw makeError(
+        "let_assert",
+        "connect_4",
+        68,
+        "update",
+        "Pattern match failed, no pattern matched the value.",
+        { value: result }
+      );
+    }
+    let column = result[0];
+    let updated_game = update_model(game_model, column);
+    let $ = updated_game.game.state;
+    let $1 = get_active_player_type(updated_game);
+    if ($ instanceof Continue2 && $1 instanceof AI) {
+      let bot_name = $1.bot_name;
+      return [new Game2(updated_game), get_move_api(updated_game, bot_name)];
+    } else {
+      return [new Game2(updated_game), none()];
+    }
+  } else if (model instanceof Game2 && msg instanceof HighlightColumn) {
+    let game_model = model.model;
+    let column = msg.column;
+    let updated_game = update_highlighted_column(game_model, column);
+    return [new Game2(updated_game), none()];
+  } else if (model instanceof Game2 && msg instanceof UnhighlightColumn) {
+    let game_model = model.model;
+    let updated_game = update_clear_highlighted_column(game_model);
+    return [new Game2(updated_game), none()];
+  } else {
+    echo2(model, "src/connect_4.gleam", 92);
+    echo2(msg, "src/connect_4.gleam", 93);
+    throw makeError("panic", "connect_4", 94, "update", "impossible state", {});
+  }
+}
+function view3(model) {
+  if (model instanceof MainMenu) {
+    let model$1 = model.model;
+    return view2(model$1);
+  } else {
+    let game_model = model.model;
+    return view(game_model);
+  }
+}
+function main() {
+  let app = application(new$5, update2, view3);
+  let $ = start2(app, "#app", new GotoMainMenu());
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "connect_4",
+      17,
+      "main",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  return void 0;
+}
+function echo2(value, file2, line) {
+  const grey = "\x1B[90m";
+  const reset_color = "\x1B[39m";
+  const file_line = `${file2}:${line}`;
+  const string_value = echo$inspect2(value);
+  if (typeof process === "object" && process.stderr?.write) {
+    const string5 = `${grey}${file_line}${reset_color}
+${string_value}
+`;
+    process.stderr.write(string5);
+  } else if (typeof Deno === "object") {
+    const string5 = `${grey}${file_line}${reset_color}
+${string_value}
+`;
+    Deno.stderr.writeSync(new TextEncoder().encode(string5));
+  } else {
+    const string5 = `${file_line}
+${string_value}`;
+    console.log(string5);
+  }
+  return value;
+}
+function echo$inspectString2(str) {
+  let new_str = '"';
+  for (let i = 0; i < str.length; i++) {
+    let char = str[i];
+    if (char == "\n")
+      new_str += "\\n";
+    else if (char == "\r")
+      new_str += "\\r";
+    else if (char == "	")
+      new_str += "\\t";
+    else if (char == "\f")
+      new_str += "\\f";
+    else if (char == "\\")
+      new_str += "\\\\";
+    else if (char == '"')
+      new_str += '\\"';
+    else if (char < " " || char > "~" && char < "\xA0") {
+      new_str += "\\u{" + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0") + "}";
+    } else {
+      new_str += char;
+    }
+  }
+  new_str += '"';
+  return new_str;
+}
+function echo$inspectDict2(map7) {
+  let body = "dict.from_list([";
+  let first2 = true;
+  let key_value_pairs = [];
+  map7.forEach((value, key) => {
+    key_value_pairs.push([key, value]);
+  });
+  key_value_pairs.sort();
+  key_value_pairs.forEach(([key, value]) => {
+    if (!first2)
+      body = body + ", ";
+    body = body + "#(" + echo$inspect2(key) + ", " + echo$inspect2(value) + ")";
+    first2 = false;
+  });
+  return body + "])";
+}
+function echo$inspectCustomType2(record) {
+  const props = Object.keys(record).map((label2) => {
+    const value = echo$inspect2(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value}` : value;
+  }).join(", ");
+  return props ? `${record.constructor.name}(${props})` : record.constructor.name;
+}
+function echo$inspectObject2(v) {
+  const name = Object.getPrototypeOf(v)?.constructor?.name || "Object";
+  const props = [];
+  for (const k of Object.keys(v)) {
+    props.push(`${echo$inspect2(k)}: ${echo$inspect2(v[k])}`);
+  }
+  const body = props.length ? " " + props.join(", ") + " " : "";
+  const head = name === "Object" ? "" : name + " ";
+  return `//js(${head}{${body}})`;
+}
+function echo$inspect2(v) {
+  const t = typeof v;
+  if (v === true)
+    return "True";
+  if (v === false)
+    return "False";
+  if (v === null)
+    return "//js(null)";
+  if (v === void 0)
+    return "Nil";
+  if (t === "string")
+    return echo$inspectString2(v);
+  if (t === "bigint" || t === "number")
+    return v.toString();
+  if (Array.isArray(v))
+    return `#(${v.map(echo$inspect2).join(", ")})`;
+  if (v instanceof List)
+    return `[${v.toArray().map(echo$inspect2).join(", ")}]`;
+  if (v instanceof UtfCodepoint)
+    return `//utfcodepoint(${String.fromCodePoint(v.value)})`;
+  if (v instanceof BitArray)
+    return echo$inspectBitArray2(v);
+  if (v instanceof CustomType)
+    return echo$inspectCustomType2(v);
+  if (echo$isDict2(v))
+    return echo$inspectDict2(v);
+  if (v instanceof Set)
+    return `//js(Set(${[...v].map(echo$inspect2).join(", ")}))`;
+  if (v instanceof RegExp)
+    return `//js(${v})`;
+  if (v instanceof Date)
+    return `//js(Date("${v.toISOString()}"))`;
+  if (v instanceof Function) {
+    const args = [];
+    for (const i of Array(v.length).keys())
+      args.push(String.fromCharCode(i + 97));
+    return `//fn(${args.join(", ")}) { ... }`;
+  }
+  return echo$inspectObject2(v);
+}
+function echo$inspectBitArray2(bitArray) {
+  let endOfAlignedBytes = bitArray.bitOffset + 8 * Math.trunc(bitArray.bitSize / 8);
+  let alignedBytes = bitArraySlice(bitArray, bitArray.bitOffset, endOfAlignedBytes);
+  let remainingUnalignedBits = bitArray.bitSize % 8;
+  if (remainingUnalignedBits > 0) {
+    let remainingBits = bitArraySliceToInt(bitArray, endOfAlignedBytes, bitArray.bitSize, false, false);
+    let alignedBytesArray = Array.from(alignedBytes.rawBuffer);
+    let suffix = `${remainingBits}:size(${remainingUnalignedBits})`;
+    if (alignedBytesArray.length === 0) {
+      return `<<${suffix}>>`;
+    } else {
+      return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}, ${suffix}>>`;
+    }
+  } else {
+    return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}>>`;
+  }
+}
+function echo$isDict2(value) {
   try {
     return value instanceof Dict;
   } catch {
