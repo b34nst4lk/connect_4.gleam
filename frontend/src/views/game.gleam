@@ -25,7 +25,6 @@ import models.{
   get_active_player_type,
 }
 
-// model
 // Update
 
 pub fn get_move_api(model: GameModel) {

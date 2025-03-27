@@ -132,7 +132,8 @@ fn minimax_iter(
     |> set.to_list
     |> list.fold([], fn(scores, move) {
       let #(updated_game, _) = update_game(game, move)
-      let has_game_ended = check_game_state(game.active, game.inactive)
+      let has_game_ended =
+        check_game_state(updated_game.active, updated_game.inactive)
 
       let score = case has_game_ended {
         Win(winner) ->

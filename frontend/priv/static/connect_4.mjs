@@ -2734,6 +2734,9 @@ var Set2 = class extends CustomType {
 function new$2() {
   return new Set2(new_map());
 }
+function is_empty(set) {
+  return isEqual(set, new$2());
+}
 function contains(set, member) {
   let _pipe = set.dict;
   let _pipe$1 = map_get(_pipe, member);
@@ -3531,10 +3534,6 @@ function to_squares(b) {
 function int_full_mask(b) {
   return bitwise_shift_left(1, b.width * b.height) - 1;
 }
-function full_mask(b) {
-  let _record = b;
-  return new Bitboard(_record.width, _record.height, int_full_mask(b));
-}
 function first_file(loop$bitboard, loop$counter, loop$val) {
   while (true) {
     let bitboard = loop$bitboard;
@@ -3858,35 +3857,6 @@ function check_win(board2) {
     return bool3;
   });
 }
-function check_draw(active, inactive) {
-  let $ = bitboard_or(active.board, inactive.board);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "shared",
-      77,
-      "check_draw",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let board2 = $[0];
-  let full_mask2 = full_mask(active.board);
-  return isEqual(full_mask2, board2);
-}
-function check_game_state(active, inactive) {
-  let $ = check_win(active.board);
-  if ($) {
-    return new Win(active.turn);
-  } else {
-    let $1 = check_draw(active, inactive);
-    if ($1) {
-      return new Draw();
-    } else {
-      return new Continue2();
-    }
-  }
-}
 var connect_4_width = 7;
 function available_moves(full_board) {
   let _pipe = range(0, connect_4_width - 1);
@@ -3926,6 +3896,34 @@ function available_moves(full_board) {
       }
     }
   );
+}
+function check_draw(active, inactive) {
+  let $ = bitboard_or(active.board, inactive.board);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "shared",
+      77,
+      "check_draw",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let board2 = $[0];
+  return is_empty(available_moves(board2));
+}
+function check_game_state(active, inactive) {
+  let $ = check_win(active.board);
+  if ($) {
+    return new Win(active.turn);
+  } else {
+    let $1 = check_draw(active, inactive);
+    if ($1) {
+      return new Draw();
+    } else {
+      return new Continue2();
+    }
+  }
 }
 var connect_4_height = 6;
 function column_to_move(game, column) {
@@ -4013,7 +4011,7 @@ function update_game(game, column) {
     throw makeError(
       "let_assert",
       "shared",
-      97,
+      96,
       "update_game",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -4029,7 +4027,7 @@ function update_game(game, column) {
       throw makeError(
         "let_assert",
         "shared",
-        105,
+        104,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $1 }
@@ -4054,7 +4052,7 @@ function update_game(game, column) {
       throw makeError(
         "let_assert",
         "shared",
-        109,
+        108,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $2 }
@@ -5788,8 +5786,6 @@ function new$4(message) {
   }
 }
 function update(model, msg) {
-  echo(model, "src/connect_4.gleam", 45);
-  echo(msg, "src/connect_4.gleam", 46);
   if (msg instanceof GotoMainMenu) {
     return [new MainMenu(), none()];
   } else if (msg instanceof NewGame) {
@@ -5812,7 +5808,7 @@ function update(model, msg) {
       throw makeError(
         "let_assert",
         "connect_4",
-        62,
+        60,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: result }
@@ -5837,9 +5833,9 @@ function update(model, msg) {
     let updated_game = update_clear_highlighted_column(game_model);
     return [new Game2(updated_game), none()];
   } else {
-    echo(model, "src/connect_4.gleam", 82);
-    echo(msg, "src/connect_4.gleam", 83);
-    throw makeError("panic", "connect_4", 84, "update", "impossible state", {});
+    echo(model, "src/connect_4.gleam", 80);
+    echo(msg, "src/connect_4.gleam", 81);
+    throw makeError("panic", "connect_4", 82, "update", "impossible state", {});
   }
 }
 function view3(model) {

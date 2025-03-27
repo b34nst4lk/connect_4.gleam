@@ -42,8 +42,6 @@ fn new(message: Message) -> #(Model, effect.Effect(Message)) {
 
 // message
 fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
-  echo model
-  echo msg
   case model, msg {
     // Nvaigation
     _, GotoMainMenu -> #(MainMenu, effect.none())
