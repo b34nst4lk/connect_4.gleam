@@ -1362,6 +1362,15 @@ var Eq = class extends CustomType {
 };
 var Gt = class extends CustomType {
 };
+function negate(order) {
+  if (order instanceof Lt) {
+    return new Gt();
+  } else if (order instanceof Eq) {
+    return new Eq();
+  } else {
+    return new Lt();
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
@@ -2681,17 +2690,11 @@ function handlers(element2) {
 function attribute(name, value) {
   return new Attribute(name, identity(value), false);
 }
-function property(name, value) {
-  return new Attribute(name, identity(value), true);
-}
 function on(name, handler) {
   return new Event("on" + name, handler);
 }
 function class$(name) {
   return attribute("class", name);
-}
-function disabled(is_disabled) {
-  return property("disabled", is_disabled);
 }
 
 // build/dev/javascript/lustre/lustre/element.mjs
@@ -3073,8 +3076,8 @@ function lustreServerEventHandler(event2) {
   return {
     tag,
     data: include.reduce(
-      (data2, property2) => {
-        const path = property2.split(".");
+      (data2, property) => {
+        const path = property.split(".");
         for (let i = 0, o = data2, e = event2; i < path.length; i++) {
           if (i === path.length - 1) {
             o[path[i]] = e[path[i]];
@@ -3165,13 +3168,13 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
    */
-  static start({ init: init2, update: update2, view: view5 }, selector, flags) {
+  static start({ init: init2, update: update2, view: view4 }, selector, flags) {
     if (!is_browser())
       return new Error(new NotABrowser());
     const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
     if (!root)
       return new Error(new ElementNotFound(selector));
-    const app = new _LustreClientApplication(root, init2(flags), update2, view5);
+    const app = new _LustreClientApplication(root, init2(flags), update2, view4);
     return new Ok((action) => app.send(action));
   }
   /**
@@ -3182,11 +3185,11 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {LustreClientApplication}
    */
-  constructor(root, [init2, effects], update2, view5) {
+  constructor(root, [init2, effects], update2, view4) {
     this.root = root;
     this.#model = init2;
     this.#update = update2;
-    this.#view = view5;
+    this.#view = view4;
     this.#tickScheduled = window.setTimeout(
       () => this.#tick(effects.all.toArray(), true),
       0
@@ -3301,20 +3304,20 @@ var LustreClientApplication = class _LustreClientApplication {
 };
 var start = LustreClientApplication.start;
 var LustreServerApplication = class _LustreServerApplication {
-  static start({ init: init2, update: update2, view: view5, on_attribute_change }, flags) {
+  static start({ init: init2, update: update2, view: view4, on_attribute_change }, flags) {
     const app = new _LustreServerApplication(
       init2(flags),
       update2,
-      view5,
+      view4,
       on_attribute_change
     );
     return new Ok((action) => app.send(action));
   }
-  constructor([model, effects], update2, view5, on_attribute_change) {
+  constructor([model, effects], update2, view4, on_attribute_change) {
     this.#model = model;
     this.#update = update2;
-    this.#view = view5;
-    this.#html = view5(model);
+    this.#view = view4;
+    this.#html = view4(model);
     this.#onAttributeChange = on_attribute_change;
     this.#renderers = /* @__PURE__ */ new Map();
     this.#handlers = handlers(this.#html);
@@ -3415,11 +3418,11 @@ var is_browser = () => globalThis.window && window.document;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init2, update2, view5, on_attribute_change) {
+  constructor(init2, update2, view4, on_attribute_change) {
     super();
     this.init = init2;
     this.update = update2;
-    this.view = view5;
+    this.view = view4;
     this.on_attribute_change = on_attribute_change;
   }
 };
@@ -3431,8 +3434,8 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init2, update2, view5) {
-  return new App(init2, update2, view5, new None());
+function application(init2, update2, view4) {
+  return new App(init2, update2, view4, new None());
 }
 function start2(app, selector, flags) {
   return guard(
@@ -4704,6 +4707,14 @@ var ReceivedMove = class extends CustomType {
     this[0] = x0;
   }
 };
+var HighlightColumn = class extends CustomType {
+  constructor(column) {
+    super();
+    this.column = column;
+  }
+};
+var UnhighlightColumn = class extends CustomType {
+};
 
 // build/dev/javascript/bibi/bibi/bitboard.mjs
 var Bitboard = class extends CustomType {
@@ -4778,17 +4789,17 @@ function to_squares(b) {
       _pipe,
       [b.val, toList([])],
       (acc, i) => {
-        let board3 = acc[0];
+        let board2 = acc[0];
         let l = acc[1];
         let l$1 = (() => {
-          let $2 = bitwise_and(1, board3) > 0;
+          let $2 = bitwise_and(1, board2) > 0;
           if ($2) {
             return prepend(i, l);
           } else {
             return l;
           }
         })();
-        let board$1 = bitwise_shift_right(board3, 1);
+        let board$1 = bitwise_shift_right(board2, 1);
         let $ = board$1 > 0;
         if ($) {
           return new Continue([board$1, l$1]);
@@ -5068,6 +5079,16 @@ function on_click(msg) {
     return new Ok(msg);
   });
 }
+function on_mouse_leave(msg) {
+  return on2("mouseleave", (_) => {
+    return new Ok(msg);
+  });
+}
+function on_mouse_over(msg) {
+  return on2("mouseover", (_) => {
+    return new Ok(msg);
+  });
+}
 
 // build/dev/javascript/connect_4/logic.mjs
 function check_consecutive(bitboard, shift, iterations) {
@@ -5076,7 +5097,7 @@ function check_consecutive(bitboard, shift, iterations) {
     return fold(
       _pipe,
       bitboard,
-      (board3, i) => {
+      (board2, i) => {
         let $ = shift(bitboard, i);
         if (!$.isOk()) {
           throw makeError(
@@ -5089,7 +5110,7 @@ function check_consecutive(bitboard, shift, iterations) {
           );
         }
         let shifted_board = $[0];
-        let $1 = bitboard_and(board3, shifted_board);
+        let $1 = bitboard_and(board2, shifted_board);
         if (!$1.isOk()) {
           throw makeError(
             "let_assert",
@@ -5107,7 +5128,7 @@ function check_consecutive(bitboard, shift, iterations) {
   })();
   return final_board.val > 0;
 }
-function check_win(board3) {
+function check_win(board2) {
   let _pipe = toList([
     shift_north,
     shift_east,
@@ -5117,7 +5138,7 @@ function check_win(board3) {
   let _pipe$1 = map(
     _pipe,
     (shift) => {
-      return check_consecutive(board3, shift, 4);
+      return check_consecutive(board2, shift, 4);
     }
   );
   return any(_pipe$1, (bool3) => {
@@ -5245,16 +5266,28 @@ function get_move(active, inactive, column) {
   return move;
 }
 
-// build/dev/javascript/connect_4/views/game_board.mjs
+// build/dev/javascript/connect_4/views/game.mjs
+var Human = class extends CustomType {
+};
+var AI = class extends CustomType {
+};
 var X = class extends CustomType {
+  constructor(player) {
+    super();
+    this.player = player;
+  }
 };
 var O = class extends CustomType {
+  constructor(player) {
+    super();
+    this.player = player;
+  }
 };
 var TurnState = class extends CustomType {
-  constructor(turn, board3) {
+  constructor(turn, board2) {
     super();
     this.turn = turn;
-    this.board = board3;
+    this.board = board2;
   }
 };
 var Win = class extends CustomType {
@@ -5267,323 +5300,6 @@ var Draw = class extends CustomType {
 };
 var Continue2 = class extends CustomType {
 };
-var Model2 = class extends CustomType {
-  constructor(active, inactive, state) {
-    super();
-    this.active = active;
-    this.inactive = inactive;
-    this.state = state;
-  }
-};
-function new$4() {
-  let $ = new$3(connect_4_width, connect_4_height);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "views/game_board",
-      38,
-      "new",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let bitboard = $[0];
-  return new Model2(
-    new TurnState(new X(), bitboard),
-    new TurnState(new O(), bitboard),
-    new Continue2()
-  );
-}
-function update_game(model, column) {
-  let active = model.active;
-  let inactive = model.inactive;
-  let state = model.state;
-  let $ = bitboard_or(active.board, inactive.board);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "views/game_board",
-      47,
-      "update_game",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let full_board = $[0];
-  let moves = available_moves(full_board);
-  let is_legal = contains(moves, column);
-  if (is_legal) {
-    let move = get_move(active.board, inactive.board, column);
-    let $1 = bitboard_or(move, active.board);
-    if (!$1.isOk()) {
-      throw makeError(
-        "let_assert",
-        "views/game_board",
-        54,
-        "update_game",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $1 }
-      );
-    }
-    let updated_board = $1[0];
-    let $2 = bitboard_or(updated_board, inactive.board);
-    if (!$2.isOk()) {
-      throw makeError(
-        "let_assert",
-        "views/game_board",
-        55,
-        "update_game",
-        "Pattern match failed, no pattern matched the value.",
-        { value: $2 }
-      );
-    }
-    let updated_full_board = $2[0];
-    let $3 = check_win(updated_board);
-    let $4 = size(available_moves(updated_full_board));
-    if ($3) {
-      return new Model2(
-        new TurnState(active.turn, updated_board),
-        new TurnState(inactive.turn, inactive.board),
-        new Win(active.turn)
-      );
-    } else if (!$3 && $4 === 0) {
-      return new Model2(
-        new TurnState(active.turn, updated_board),
-        inactive,
-        new Draw()
-      );
-    } else {
-      return new Model2(
-        inactive,
-        new TurnState(active.turn, updated_board),
-        new Continue2()
-      );
-    }
-  } else {
-    return new Model2(active, inactive, state);
-  }
-}
-function header(active, _, state) {
-  let class$2 = (() => {
-    if (state instanceof Win) {
-      return "win";
-    } else if (state instanceof Draw) {
-      return "draw";
-    } else {
-      return "continue";
-    }
-  })();
-  let text2 = (() => {
-    if (state instanceof Win) {
-      let winner = state.t;
-      return "Winner is " + (() => {
-        if (winner instanceof O) {
-          return "O";
-        } else {
-          return "X";
-        }
-      })();
-    } else if (state instanceof Draw) {
-      return "Draw";
-    } else {
-      let $ = active.turn;
-      if ($ instanceof O) {
-        return "Yellow's turn";
-      } else {
-        return "Red's turn";
-      }
-    }
-  })();
-  return div(
-    toList([class$("header " + class$2)]),
-    toList([
-      text(text2),
-      div(
-        toList([]),
-        toList([
-          button(
-            toList([on_click(new NewGame())]),
-            toList([text("Restart")])
-          ),
-          button(
-            toList([on_click(new GotoMainMenu())]),
-            toList([text("Main menu")])
-          )
-        ])
-      )
-    ])
-  );
-}
-function move_picker(active, inactive, state) {
-  let $ = bitboard_or(active.board, inactive.board);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "views/game_board",
-      130,
-      "move_picker",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let full_board = $[0];
-  let moves = (() => {
-    if (state instanceof Win) {
-      return new$2();
-    } else if (state instanceof Draw) {
-      return new$2();
-    } else {
-      return available_moves(full_board);
-    }
-  })();
-  let buttons = (() => {
-    let _pipe = range(0, connect_4_width - 1);
-    return map(
-      _pipe,
-      (i) => {
-        return button(
-          toList([
-            class$("drop-button"),
-            on_click(new Move(i)),
-            disabled(!contains(moves, i))
-          ]),
-          toList([text(" \u2B07 ")])
-        );
-      }
-    );
-  })();
-  return div(
-    toList([
-      class$("board"),
-      class$("move-picker"),
-      class$("board")
-    ]),
-    buttons
-  );
-}
-function convert_bitboard_to_set(bitboard) {
-  return from_list2(to_squares(bitboard));
-}
-function turn_to_color(t) {
-  if (t instanceof X) {
-    return "red";
-  } else {
-    return "yellow";
-  }
-}
-function board(active, inactive, _) {
-  let active_board = convert_bitboard_to_set(active.board);
-  let inactive_board = convert_bitboard_to_set(inactive.board);
-  let board_rows = (() => {
-    let _pipe = range(connect_4_height - 1, 0);
-    return fold(
-      _pipe,
-      toList([]),
-      (cells, i) => {
-        let row = (() => {
-          let _pipe$1 = range(0, connect_4_width - 1);
-          return map(
-            _pipe$1,
-            (j) => {
-              let cell_id = i * connect_4_width + j;
-              let color = (() => {
-                let $ = contains(active_board, cell_id);
-                let $1 = contains(inactive_board, cell_id);
-                if ($ && !$1) {
-                  return turn_to_color(active.turn);
-                } else if (!$ && $1) {
-                  return turn_to_color(inactive.turn);
-                } else {
-                  return "white";
-                }
-              })();
-              return div(
-                toList([class$("cell")]),
-                toList([
-                  div(
-                    toList([class$("circle " + color)]),
-                    toList([])
-                  )
-                ])
-              );
-            }
-          );
-        })();
-        return append(cells, row);
-      }
-    );
-  })();
-  return div(toList([class$("board")]), board_rows);
-}
-function view(model) {
-  return div(
-    toList([class$("game")]),
-    toList([
-      h1(toList([]), toList([text("Local play")])),
-      header(model.active, model.inactive, model.state),
-      move_picker(model.active, model.inactive, model.state),
-      board(model.active, model.inactive, model.state)
-    ])
-  );
-}
-
-// build/dev/javascript/connect_4/views/main_menu.mjs
-function view2() {
-  return div(
-    toList([]),
-    toList([
-      h1(
-        toList([]),
-        toList([
-          text("CONNECT 4 LOL"),
-          button(
-            toList([on_click(new NewGame())]),
-            toList([text("Play locally")])
-          ),
-          button(
-            toList([on_click(new NewOnlineGame())]),
-            toList([text("VS AI")])
-          )
-        ])
-      )
-    ])
-  );
-}
-
-// build/dev/javascript/connect_4/views/vs_ai_board.mjs
-var Human = class extends CustomType {
-};
-var AI = class extends CustomType {
-};
-var X2 = class extends CustomType {
-  constructor(player) {
-    super();
-    this.player = player;
-  }
-};
-var O2 = class extends CustomType {
-  constructor(player) {
-    super();
-    this.player = player;
-  }
-};
-var TurnState2 = class extends CustomType {
-  constructor(turn, board3) {
-    super();
-    this.turn = turn;
-    this.board = board3;
-  }
-};
-var Win2 = class extends CustomType {
-  constructor(t) {
-    super();
-    this.t = t;
-  }
-};
-var Draw2 = class extends CustomType {
-};
-var Continue3 = class extends CustomType {
-};
 var DebugLog = class extends CustomType {
   constructor(move_count, turn, state) {
     super();
@@ -5592,35 +5308,37 @@ var DebugLog = class extends CustomType {
     this.state = state;
   }
 };
-var Model3 = class extends CustomType {
-  constructor(active, inactive, state, move_counter, move_history) {
+var Model2 = class extends CustomType {
+  constructor(active, inactive, state, move_counter, move_history, highlight_column) {
     super();
     this.active = active;
     this.inactive = inactive;
     this.state = state;
     this.move_counter = move_counter;
     this.move_history = move_history;
+    this.highlight_column = highlight_column;
   }
 };
-function new$5() {
+function new$4(x, o) {
   let $ = new$3(connect_4_width, connect_4_height);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
-      "views/vs_ai_board",
-      59,
+      "views/game",
+      61,
       "new",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
     );
   }
   let bitboard = $[0];
-  return new Model3(
-    new TurnState2(new X2(new Human()), bitboard),
-    new TurnState2(new O2(new AI()), bitboard),
-    new Continue3(),
+  return new Model2(
+    new TurnState(new X(x), bitboard),
+    new TurnState(new O(o), bitboard),
+    new Continue2(),
     0,
-    new_map()
+    new_map(),
+    -1
   );
 }
 function get_move_api(model) {
@@ -5628,7 +5346,7 @@ function get_move_api(model) {
   let req_body = (() => {
     let _pipe = (() => {
       let $ = model.active.turn;
-      if ($ instanceof X2) {
+      if ($ instanceof X) {
         return toList([
           ["x", int3(model.active.board.val)],
           ["o", int3(model.inactive.board.val)],
@@ -5662,15 +5380,15 @@ function get_move_api(model) {
     )
   );
 }
-function update_game2(model, column) {
+function update_game(model, column) {
   let active = model.active;
   let inactive = model.inactive;
   let $ = bitboard_or(active.board, inactive.board);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
-      "views/vs_ai_board",
-      104,
+      "views/game",
+      107,
       "update_game",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -5685,8 +5403,8 @@ function update_game2(model, column) {
     if (!$1.isOk()) {
       throw makeError(
         "let_assert",
-        "views/vs_ai_board",
-        111,
+        "views/game",
+        114,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $1 }
@@ -5697,8 +5415,8 @@ function update_game2(model, column) {
     if (!$2.isOk()) {
       throw makeError(
         "let_assert",
-        "views/vs_ai_board",
-        112,
+        "views/game",
+        115,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $2 }
@@ -5712,8 +5430,8 @@ function update_game2(model, column) {
     if (!$3.isOk()) {
       throw makeError(
         "let_assert",
-        "views/vs_ai_board",
-        114,
+        "views/game",
+        117,
         "update_game",
         "Pattern match failed, no pattern matched the value.",
         { value: $3 }
@@ -5723,71 +5441,98 @@ function update_game2(model, column) {
     let $4 = check_win(updated_board);
     let $5 = size(available_moves(updated_full_board));
     if ($4) {
-      return new Model3(
-        new TurnState2(inactive.turn, inactive.board),
-        new TurnState2(active.turn, updated_board),
-        new Win2(active.turn),
+      return new Model2(
+        new TurnState(inactive.turn, inactive.board),
+        new TurnState(active.turn, updated_board),
+        new Win(active.turn),
         model.move_counter,
         insert(
           model.move_history,
           cell_id,
-          new DebugLog(model.move_counter, active.turn, new Win2(active.turn))
-        )
+          new DebugLog(model.move_counter, active.turn, new Win(active.turn))
+        ),
+        model.highlight_column
       );
     } else if (!$4 && $5 === 0) {
-      return new Model3(
+      return new Model2(
         inactive,
-        new TurnState2(active.turn, updated_board),
-        new Draw2(),
+        new TurnState(active.turn, updated_board),
+        new Draw(),
         model.move_counter,
         insert(
           model.move_history,
           cell_id,
-          new DebugLog(model.move_counter, active.turn, new Draw2())
-        )
+          new DebugLog(model.move_counter, active.turn, new Draw())
+        ),
+        model.highlight_column
       );
     } else {
-      return new Model3(
+      return new Model2(
         inactive,
-        new TurnState2(active.turn, updated_board),
-        new Continue3(),
+        new TurnState(active.turn, updated_board),
+        new Continue2(),
         model.move_counter + 1,
         insert(
           model.move_history,
           cell_id,
-          new DebugLog(model.move_counter, active.turn, new Continue3())
-        )
+          new DebugLog(model.move_counter, active.turn, new Continue2())
+        ),
+        model.highlight_column
       );
     }
   } else {
     return model;
   }
 }
-function header2(active, _, state) {
+function update_highlighted_column(model, column) {
+  let _record = model;
+  return new Model2(
+    _record.active,
+    _record.inactive,
+    _record.state,
+    _record.move_counter,
+    _record.move_history,
+    column
+  );
+}
+function update_clear_highlighted_column(model) {
+  let _record = model;
+  return new Model2(
+    _record.active,
+    _record.inactive,
+    _record.state,
+    _record.move_counter,
+    _record.move_history,
+    -1
+  );
+}
+function header(model) {
   let class$2 = (() => {
-    if (state instanceof Win2) {
+    let $ = model.state;
+    if ($ instanceof Win) {
       return "win";
-    } else if (state instanceof Draw2) {
+    } else if ($ instanceof Draw) {
       return "draw";
     } else {
       return "continue";
     }
   })();
   let text2 = (() => {
-    if (state instanceof Win2) {
-      let winner = state.t;
+    let $ = model.state;
+    if ($ instanceof Win) {
+      let winner = $.t;
       return "Winner is " + (() => {
-        if (winner instanceof O2) {
+        if (winner instanceof O) {
           return "Yellow";
         } else {
           return "Red";
         }
       })();
-    } else if (state instanceof Draw2) {
+    } else if ($ instanceof Draw) {
       return "Draw";
     } else {
-      let $ = active.turn;
-      if ($ instanceof O2) {
+      let $1 = model.active.turn;
+      if ($1 instanceof O) {
         return "Yellow's turn";
       } else {
         return "Red's turn";
@@ -5814,71 +5559,19 @@ function header2(active, _, state) {
     ])
   );
 }
-function move_picker2(active, inactive, state) {
-  let $ = bitboard_or(active.board, inactive.board);
-  if (!$.isOk()) {
-    throw makeError(
-      "let_assert",
-      "views/vs_ai_board",
-      205,
-      "move_picker",
-      "Pattern match failed, no pattern matched the value.",
-      { value: $ }
-    );
-  }
-  let full_board = $[0];
-  let game_ended = (() => {
-    if (state instanceof Win2) {
-      return true;
-    } else if (state instanceof Draw2) {
-      return true;
-    } else {
-      return false;
-    }
-  })();
-  let buttons = (() => {
-    let _pipe = range(0, connect_4_width - 1);
-    return map(
-      _pipe,
-      (i) => {
-        return button(
-          toList([
-            class$("drop-button"),
-            on_click(new Move(i)),
-            disabled(
-              game_ended || !contains(available_moves(full_board), i) || isEqual(
-                active.turn.player,
-                new AI()
-              )
-            )
-          ]),
-          toList([text(" \u2B07 ")])
-        );
-      }
-    );
-  })();
-  return div(
-    toList([
-      class$("board"),
-      class$("move-picker"),
-      class$("board")
-    ]),
-    buttons
-  );
-}
-function convert_bitboard_to_set2(bitboard) {
+function convert_bitboard_to_set(bitboard) {
   return from_list2(to_squares(bitboard));
 }
-function turn_to_color2(t) {
-  if (t instanceof X2) {
+function turn_to_color(t) {
+  if (t instanceof X) {
     return "red";
   } else {
     return "yellow";
   }
 }
-function board2(active, inactive, move_history) {
-  let active_board = convert_bitboard_to_set2(active.board);
-  let inactive_board = convert_bitboard_to_set2(inactive.board);
+function board(model) {
+  let active_board = convert_bitboard_to_set(model.active.board);
+  let inactive_board = convert_bitboard_to_set(model.inactive.board);
   let board_rows = (() => {
     let _pipe = range(connect_4_height - 1, 0);
     return fold(
@@ -5895,15 +5588,15 @@ function board2(active, inactive, move_history) {
                 let $ = contains(active_board, cell_id);
                 let $1 = contains(inactive_board, cell_id);
                 if ($ && !$1) {
-                  return turn_to_color2(active.turn);
+                  return turn_to_color(model.active.turn);
                 } else if (!$ && $1) {
-                  return turn_to_color2(inactive.turn);
+                  return turn_to_color(model.inactive.turn);
                 } else {
                   return "white";
                 }
               })();
               let text2 = (() => {
-                let $ = map_get(move_history, cell_id);
+                let $ = map_get(model.move_history, cell_id);
                 if ($.isOk()) {
                   let log2 = $[0];
                   return to_string(log2.move_count);
@@ -5911,8 +5604,38 @@ function board2(active, inactive, move_history) {
                   return "";
                 }
               })();
+              let cell_attributes = toList([
+                class$("cell"),
+                on_mouse_over(new HighlightColumn(j)),
+                on_mouse_leave(new UnhighlightColumn())
+              ]);
+              let cell_attributes$1 = (() => {
+                let $ = model.highlight_column === j;
+                if ($) {
+                  return append(
+                    cell_attributes,
+                    toList([class$("highlight")])
+                  );
+                } else {
+                  return cell_attributes;
+                }
+              })();
+              let cell_attributes$2 = (() => {
+                let $ = isEqual(model.active.turn.player, new Human()) && isEqual(
+                  model.state,
+                  new Continue2()
+                );
+                if ($) {
+                  return append(
+                    cell_attributes$1,
+                    toList([on_click(new Move(j))])
+                  );
+                } else {
+                  return cell_attributes$1;
+                }
+              })();
               return div(
-                toList([class$("cell")]),
+                cell_attributes$2,
                 toList([
                   div(
                     toList([class$("circle " + color)]),
@@ -5930,7 +5653,7 @@ function board2(active, inactive, move_history) {
   return div(toList([class$("board")]), board_rows);
 }
 function turn_to_string(t) {
-  if (t instanceof X2) {
+  if (t instanceof X) {
     return "Red";
   } else {
     return "Yellow";
@@ -5940,10 +5663,10 @@ function format_log(square, log2) {
   let square$1 = to_string(square);
   let state = (() => {
     let $ = log2.state;
-    if ($ instanceof Win2) {
+    if ($ instanceof Win) {
       let turn2 = $.t;
       return turn_to_string(turn2) + ": wins";
-    } else if ($ instanceof Draw2) {
+    } else if ($ instanceof Draw) {
       return "draw";
     } else {
       return "continue";
@@ -5960,7 +5683,7 @@ function debug_log(model) {
     let _pipe$2 = sort(
       _pipe$1,
       (a, b) => {
-        return compare(a[1].move_count, b[1].move_count);
+        return negate(compare(a[1].move_count, b[1].move_count));
       }
     );
     return map(
@@ -5975,15 +5698,37 @@ function debug_log(model) {
   })();
   return ul(toList([]), logs);
 }
-function view3(model) {
+function view(model) {
   return div(
     toList([class$("game")]),
     toList([
       h1(toList([]), toList([text("VS AI")])),
-      header2(model.active, model.inactive, model.state),
-      move_picker2(model.active, model.inactive, model.state),
-      board2(model.active, model.inactive, model.move_history),
+      header(model),
+      board(model),
       debug_log(model)
+    ])
+  );
+}
+
+// build/dev/javascript/connect_4/views/main_menu.mjs
+function view2() {
+  return div(
+    toList([]),
+    toList([
+      h1(
+        toList([]),
+        toList([
+          text("CONNECT 4 LOL"),
+          button(
+            toList([on_click(new NewGame())]),
+            toList([text("Play locally")])
+          ),
+          button(
+            toList([on_click(new NewOnlineGame())]),
+            toList([text("VS AI")])
+          )
+        ])
+      )
     ])
   );
 }
@@ -5991,92 +5736,88 @@ function view3(model) {
 // build/dev/javascript/connect_4/connect_4.mjs
 var MainMenu = class extends CustomType {
 };
-var LocalGame = class extends CustomType {
+var Game = class extends CustomType {
   constructor(model) {
     super();
     this.model = model;
   }
 };
-var OnlineGame = class extends CustomType {
-  constructor(model) {
-    super();
-    this.model = model;
-  }
-};
-function new$6(message) {
+function new$5(message) {
   if (message instanceof GotoMainMenu) {
     return [new MainMenu(), none()];
   } else if (message instanceof NewGame) {
-    return [new LocalGame(new$4()), none()];
+    return [new Game(new$4(new Human(), new Human())), none()];
   } else if (message instanceof NewOnlineGame) {
-    return [new OnlineGame(new$5()), none()];
+    return [new Game(new$4(new Human(), new AI())), none()];
   } else {
-    throw makeError("panic", "connect_4", 30, "new", "should not happen", {});
+    throw makeError("panic", "connect_4", 28, "new", "should not happen", {});
   }
 }
 function update(model, msg) {
   if (msg instanceof GotoMainMenu) {
     return [new MainMenu(), none()];
   } else if (msg instanceof NewGame) {
-    return new$6(msg);
+    return new$5(msg);
   } else if (msg instanceof NewOnlineGame) {
-    return new$6(msg);
-  } else if (model instanceof LocalGame && msg instanceof Move) {
+    return new$5(msg);
+  } else if (model instanceof Game && msg instanceof Move) {
     let game_model = model.model;
     let column = msg.column;
-    return [new LocalGame(update_game(game_model, column)), none()];
-  } else if (model instanceof OnlineGame && msg instanceof Move) {
-    let game_model = model.model;
-    let column = msg.column;
-    let updated_game = update_game2(game_model, column);
+    let updated_game = update_game(game_model, column);
     let $ = updated_game.state;
     let $1 = updated_game.active.turn.player;
-    if ($ instanceof Continue3 && $1 instanceof AI) {
-      return [new OnlineGame(updated_game), get_move_api(updated_game)];
+    if ($ instanceof Continue2 && $1 instanceof AI) {
+      return [new Game(updated_game), get_move_api(updated_game)];
     } else {
-      return [new OnlineGame(updated_game), none()];
+      return [new Game(updated_game), none()];
     }
-  } else if (model instanceof OnlineGame && msg instanceof ReceivedMove) {
+  } else if (model instanceof Game && msg instanceof ReceivedMove) {
     let game_model = model.model;
     let result = msg[0];
     if (!result.isOk()) {
       throw makeError(
         "let_assert",
         "connect_4",
-        60,
+        53,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: result }
       );
     }
     let column = result[0];
-    let updated_game = update_game2(game_model, column);
-    return [new OnlineGame(updated_game), none()];
+    let updated_game = update_game(game_model, column);
+    return [new Game(updated_game), none()];
+  } else if (model instanceof Game && msg instanceof HighlightColumn) {
+    let game_model = model.model;
+    let column = msg.column;
+    let updated_game = update_highlighted_column(game_model, column);
+    return [new Game(updated_game), none()];
+  } else if (model instanceof Game && msg instanceof UnhighlightColumn) {
+    let game_model = model.model;
+    let updated_game = update_clear_highlighted_column(game_model);
+    return [new Game(updated_game), none()];
   } else {
-    echo(model, "src/connect_4.gleam", 65);
-    echo(msg, "src/connect_4.gleam", 66);
-    throw makeError("panic", "connect_4", 67, "update", "impossible state", {});
+    echo(model, "src/connect_4.gleam", 68);
+    echo(msg, "src/connect_4.gleam", 69);
+    throw makeError("panic", "connect_4", 70, "update", "impossible state", {});
   }
 }
-function view4(model) {
+function view3(model) {
   if (model instanceof MainMenu) {
     return view2();
-  } else if (model instanceof LocalGame) {
-    let game_model = model.model;
-    return view(game_model);
   } else {
     let game_model = model.model;
-    return view3(game_model);
+    return view(game_model);
   }
 }
 function main() {
-  let app = application(new$6, update, view4);
+  let app = application(new$5, update, view3);
   let $ = start2(app, "#app", new GotoMainMenu());
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "connect_4",
-      12,
+      11,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }

@@ -13,4 +13,6 @@ pub type Message {
   // Shared messages
   Move(column: Int)
   ReceivedMove(Result(Int, lustre_http.HttpError))
+  HighlightColumn(column: Int)
+  UnhighlightColumn
 }

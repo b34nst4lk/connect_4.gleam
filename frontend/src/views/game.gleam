@@ -3,6 +3,7 @@ import gleam/dynamic/decode
 import gleam/int
 import gleam/json
 import gleam/list
+import gleam/order
 import gleam/set
 
 import lustre/attribute
@@ -52,17 +53,19 @@ pub type Model {
     state: GameState,
     move_counter: Int,
     move_history: Dict(Int, DebugLog),
+    highlight_column: Int,
   )
 }
 
-pub fn new() -> Model {
+pub fn new(x: PlayerType, o: PlayerType) -> Model {
   let assert Ok(bitboard) = b.new(connect_4_width, connect_4_height)
   Model(
-    TurnState(X(Human), bitboard),
-    TurnState(O(AI), bitboard),
+    TurnState(X(x), bitboard),
+    TurnState(O(o), bitboard),
     Continue,
     0,
     dict.new(),
+    -1,
   )
 }
 
@@ -127,6 +130,7 @@ pub fn update_game(model: Model, column: Int) -> Model {
               cell_id,
               DebugLog(model.move_counter, active.turn, Win(active.turn)),
             ),
+            model.highlight_column,
           )
         False, 0 ->
           Model(
@@ -139,6 +143,7 @@ pub fn update_game(model: Model, column: Int) -> Model {
               cell_id,
               DebugLog(model.move_counter, active.turn, Draw),
             ),
+            model.highlight_column,
           )
         False, _ ->
           Model(
@@ -151,6 +156,7 @@ pub fn update_game(model: Model, column: Int) -> Model {
               cell_id,
               DebugLog(model.move_counter, active.turn, Continue),
             ),
+            model.highlight_column,
           )
       }
     }
@@ -158,19 +164,23 @@ pub fn update_game(model: Model, column: Int) -> Model {
   }
 }
 
+pub fn update_highlighted_column(model: Model, column: Int) {
+  Model(..model, highlight_column: column)
+}
+
+pub fn update_clear_highlighted_column(model: Model) {
+  Model(..model, highlight_column: -1)
+}
+
 // View
 
-pub fn header(
-  active: TurnState,
-  _: TurnState,
-  state: GameState,
-) -> element.Element(_) {
-  let class = case state {
+pub fn header(model: Model) -> element.Element(_) {
+  let class = case model.state {
     Win(_) -> "win"
     Draw -> "draw"
     Continue -> "continue"
   }
-  let text = case state {
+  let text = case model.state {
     Win(winner) ->
       "Winner is "
       <> {
@@ -181,7 +191,7 @@ pub fn header(
       }
     Draw -> "Draw"
     Continue ->
-      case active.turn {
+      case model.active.turn {
         O(_) -> "Yellow's turn"
         X(_) -> "Red's turn"
       }
@@ -197,13 +207,10 @@ pub fn header(
   ])
 }
 
-pub fn move_picker(
-  active: TurnState,
-  inactive: TurnState,
-  state: GameState,
-) -> element.Element(_) {
-  let assert Ok(full_board) = b.bitboard_or(active.board, inactive.board)
-  let game_ended = case state {
+pub fn move_picker(model: Model) -> element.Element(_) {
+  let assert Ok(full_board) =
+    b.bitboard_or(model.active.board, model.inactive.board)
+  let game_ended = case model.state {
     Win(_) -> True
     Draw -> True
     _ -> False
@@ -219,7 +226,7 @@ pub fn move_picker(
           attribute.disabled(
             game_ended
             || !set.contains(available_moves(full_board), i)
-            || active.turn.player == AI,
+            || model.active.turn.player == AI,
           ),
         ],
         [element.text(" ⬇ ")],
@@ -247,13 +254,9 @@ fn turn_to_color(t: Turn) -> String {
   }
 }
 
-pub fn board(
-  active: TurnState,
-  inactive: TurnState,
-  move_history: Dict(Int, DebugLog),
-) -> element.Element(_) {
-  let active_board = convert_bitboard_to_set(active.board)
-  let inactive_board = convert_bitboard_to_set(inactive.board)
+pub fn board(model: Model) -> element.Element(_) {
+  let active_board = convert_bitboard_to_set(model.active.board)
+  let inactive_board = convert_bitboard_to_set(model.inactive.board)
   let board_rows =
     list.range(connect_4_height - 1, 0)
     |> list.fold([], fn(cells, i) {
@@ -265,16 +268,30 @@ pub fn board(
             set.contains(active_board, cell_id),
             set.contains(inactive_board, cell_id)
           {
-            True, False -> turn_to_color(active.turn)
-            False, True -> turn_to_color(inactive.turn)
+            True, False -> turn_to_color(model.active.turn)
+            False, True -> turn_to_color(model.inactive.turn)
             _, _ -> "white"
           }
-          let text = case dict.get(move_history, cell_id) {
+          let text = case dict.get(model.move_history, cell_id) {
             Ok(log) -> int.to_string(log.move_count)
             Error(_) -> ""
           }
-
-          html.div([attribute.class("cell")], [
+          let cell_attributes = [
+            attribute.class("cell"),
+            event.on_mouse_over(msg.HighlightColumn(j)),
+            event.on_mouse_leave(msg.UnhighlightColumn),
+          ]
+          let cell_attributes = case model.highlight_column == j {
+            True -> list.append(cell_attributes, [attribute.class("highlight")])
+            False -> cell_attributes
+          }
+          let cell_attributes = case
+            model.active.turn.player == Human && model.state == Continue
+          {
+            True -> list.append(cell_attributes, [event.on_click(msg.Move(j))])
+            False -> cell_attributes
+          }
+          html.div(cell_attributes, [
             html.div([attribute.class("circle" <> " " <> color)], [
               element.text(text),
             ]),
@@ -310,7 +327,7 @@ fn debug_log(model: Model) -> element.Element(_) {
     model.move_history
     |> dict.to_list
     |> list.sort(fn(a, b) {
-      int.compare({ a.1 }.move_count, { b.1 }.move_count)
+      order.negate(int.compare({ a.1 }.move_count, { b.1 }.move_count))
     })
     |> list.map(fn(log) {
       html.li([], [element.text(format_log(log.0, log.1))])
@@ -322,9 +339,8 @@ fn debug_log(model: Model) -> element.Element(_) {
 pub fn view(model: Model) -> element.Element(_) {
   html.div([attribute.class("game")], [
     html.h1([], [element.text("VS AI")]),
-    header(model.active, model.inactive, model.state),
-    move_picker(model.active, model.inactive, model.state),
-    board(model.active, model.inactive, model.move_history),
+    header(model),
+    board(model),
     debug_log(model),
   ])
 }

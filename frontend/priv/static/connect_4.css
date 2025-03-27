@@ -33,6 +33,10 @@
     background-color: white;
 }
 
+.highlight {
+    background-color: pink;
+}
+
 .header {
     display: flex;
     flex-direction: row;
