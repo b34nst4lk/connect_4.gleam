@@ -20,7 +20,7 @@ pub fn game_model_decoder_test() {
     #(
       1,
       1,
-      "x",
+      "red",
       s.Game(
         s.Player(s.Red, b.Bitboard(..bitboard, val: 1)),
         s.Player(s.Yellow, b.Bitboard(..bitboard, val: 1)),
@@ -30,7 +30,7 @@ pub fn game_model_decoder_test() {
     #(
       2,
       1,
-      "x",
+      "red",
       s.Game(
         s.Player(s.Red, b.Bitboard(..bitboard, val: 2)),
         s.Player(s.Yellow, b.Bitboard(..bitboard, val: 1)),
@@ -40,7 +40,7 @@ pub fn game_model_decoder_test() {
     #(
       2,
       1,
-      "o",
+      "yellow",
       s.Game(
         s.Player(s.Yellow, b.Bitboard(..bitboard, val: 1)),
         s.Player(s.Red, b.Bitboard(..bitboard, val: 2)),
@@ -52,8 +52,8 @@ pub fn game_model_decoder_test() {
     let undecoded =
       dynamic.from(
         dict.from_list([
-          #("x", dynamic.from(test_case.0)),
-          #("o", dynamic.from(test_case.1)),
+          #("red", dynamic.from(test_case.0)),
+          #("yellow", dynamic.from(test_case.1)),
           #("play_for", dynamic.from(test_case.2)),
         ]),
       )
