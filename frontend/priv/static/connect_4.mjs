@@ -260,8 +260,8 @@ function bitArrayByteAt(buffer, bitOffset, index5) {
   }
 }
 var UtfCodepoint = class {
-  constructor(value) {
-    this.value = value;
+  constructor(value3) {
+    this.value = value3;
   }
 };
 var isBitArrayDeprecationMessagePrinted = {};
@@ -324,14 +324,14 @@ function bitArraySliceToInt(bitArray, start3, end, isBigEndian, isSigned) {
   if (startByteIndex == endByteIndex) {
     const mask2 = 255 >> start3 % 8;
     const unusedLowBitCount = (8 - end % 8) % 8;
-    let value = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
+    let value3 = (bitArray.rawBuffer[startByteIndex] & mask2) >> unusedLowBitCount;
     if (isSigned) {
       const highBit = 2 ** (size - 1);
-      if (value >= highBit) {
-        value -= highBit * 2;
+      if (value3 >= highBit) {
+        value3 -= highBit * 2;
       }
     }
-    return value;
+    return value3;
   }
   if (size <= 53) {
     return intFromUnalignedSliceUsingNumber(
@@ -373,78 +373,78 @@ function intFromAlignedSlice(bitArray, start3, end, isBigEndian, isSigned) {
 }
 function intFromAlignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
   const byteSize = end - start3;
-  let value = 0;
+  let value3 = 0;
   if (isBigEndian) {
     for (let i = start3; i < end; i++) {
-      value *= 256;
-      value += buffer[i];
+      value3 *= 256;
+      value3 += buffer[i];
     }
   } else {
     for (let i = end - 1; i >= start3; i--) {
-      value *= 256;
-      value += buffer[i];
+      value3 *= 256;
+      value3 += buffer[i];
     }
   }
   if (isSigned) {
     const highBit = 2 ** (byteSize * 8 - 1);
-    if (value >= highBit) {
-      value -= highBit * 2;
+    if (value3 >= highBit) {
+      value3 -= highBit * 2;
     }
   }
-  return value;
+  return value3;
 }
 function intFromAlignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
   const byteSize = end - start3;
-  let value = 0n;
+  let value3 = 0n;
   if (isBigEndian) {
     for (let i = start3; i < end; i++) {
-      value *= 256n;
-      value += BigInt(buffer[i]);
+      value3 *= 256n;
+      value3 += BigInt(buffer[i]);
     }
   } else {
     for (let i = end - 1; i >= start3; i--) {
-      value *= 256n;
-      value += BigInt(buffer[i]);
+      value3 *= 256n;
+      value3 += BigInt(buffer[i]);
     }
   }
   if (isSigned) {
     const highBit = 1n << BigInt(byteSize * 8 - 1);
-    if (value >= highBit) {
-      value -= highBit * 2n;
+    if (value3 >= highBit) {
+      value3 -= highBit * 2n;
     }
   }
-  return Number(value);
+  return Number(value3);
 }
 function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSigned) {
   const isStartByteAligned = start3 % 8 === 0;
   let size = end - start3;
   let byteIndex = Math.trunc(start3 / 8);
-  let value = 0;
+  let value3 = 0;
   if (isBigEndian) {
     if (!isStartByteAligned) {
       const leadingBitsCount = 8 - start3 % 8;
-      value = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
+      value3 = buffer[byteIndex++] & (1 << leadingBitsCount) - 1;
       size -= leadingBitsCount;
     }
     while (size >= 8) {
-      value *= 256;
-      value += buffer[byteIndex++];
+      value3 *= 256;
+      value3 += buffer[byteIndex++];
       size -= 8;
     }
     if (size > 0) {
-      value *= 2 ** size;
-      value += buffer[byteIndex] >> 8 - size;
+      value3 *= 2 ** size;
+      value3 += buffer[byteIndex] >> 8 - size;
     }
   } else {
     if (isStartByteAligned) {
       let size2 = end - start3;
       let scale = 1;
       while (size2 >= 8) {
-        value += buffer[byteIndex++] * scale;
+        value3 += buffer[byteIndex++] * scale;
         scale *= 256;
         size2 -= 8;
       }
-      value += (buffer[byteIndex] >> 8 - size2) * scale;
+      value3 += (buffer[byteIndex] >> 8 - size2) * scale;
     } else {
       const highBitsCount = start3 % 8;
       const lowBitsCount = 8 - highBitsCount;
@@ -452,7 +452,7 @@ function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSi
       let scale = 1;
       while (size2 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value += (byte & 255) * scale;
+        value3 += (byte & 255) * scale;
         scale *= 256;
         size2 -= 8;
         byteIndex++;
@@ -465,48 +465,48 @@ function intFromUnalignedSliceUsingNumber(buffer, start3, end, isBigEndian, isSi
           trailingByte *= 2 ** size2;
           trailingByte += buffer[byteIndex + 1] >> 8 - size2;
         }
-        value += trailingByte * scale;
+        value3 += trailingByte * scale;
       }
     }
   }
   if (isSigned) {
     const highBit = 2 ** (end - start3 - 1);
-    if (value >= highBit) {
-      value -= highBit * 2;
+    if (value3 >= highBit) {
+      value3 -= highBit * 2;
     }
   }
-  return value;
+  return value3;
 }
 function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSigned) {
   const isStartByteAligned = start3 % 8 === 0;
   let size = end - start3;
   let byteIndex = Math.trunc(start3 / 8);
-  let value = 0n;
+  let value3 = 0n;
   if (isBigEndian) {
     if (!isStartByteAligned) {
       const leadingBitsCount = 8 - start3 % 8;
-      value = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
+      value3 = BigInt(buffer[byteIndex++] & (1 << leadingBitsCount) - 1);
       size -= leadingBitsCount;
     }
     while (size >= 8) {
-      value *= 256n;
-      value += BigInt(buffer[byteIndex++]);
+      value3 *= 256n;
+      value3 += BigInt(buffer[byteIndex++]);
       size -= 8;
     }
     if (size > 0) {
-      value <<= BigInt(size);
-      value += BigInt(buffer[byteIndex] >> 8 - size);
+      value3 <<= BigInt(size);
+      value3 += BigInt(buffer[byteIndex] >> 8 - size);
     }
   } else {
     if (isStartByteAligned) {
       let size2 = end - start3;
       let shift = 0n;
       while (size2 >= 8) {
-        value += BigInt(buffer[byteIndex++]) << shift;
+        value3 += BigInt(buffer[byteIndex++]) << shift;
         shift += 8n;
         size2 -= 8;
       }
-      value += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
+      value3 += BigInt(buffer[byteIndex] >> 8 - size2) << shift;
     } else {
       const highBitsCount = start3 % 8;
       const lowBitsCount = 8 - highBitsCount;
@@ -514,7 +514,7 @@ function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSi
       let shift = 0n;
       while (size2 >= 8) {
         const byte = buffer[byteIndex] << highBitsCount | buffer[byteIndex + 1] >> lowBitsCount;
-        value += BigInt(byte & 255) << shift;
+        value3 += BigInt(byte & 255) << shift;
         shift += 8n;
         size2 -= 8;
         byteIndex++;
@@ -527,17 +527,17 @@ function intFromUnalignedSliceUsingBigInt(buffer, start3, end, isBigEndian, isSi
           trailingByte <<= size2;
           trailingByte += buffer[byteIndex + 1] >> 8 - size2;
         }
-        value += BigInt(trailingByte) << shift;
+        value3 += BigInt(trailingByte) << shift;
       }
     }
   }
   if (isSigned) {
     const highBit = 2n ** BigInt(end - start3 - 1);
-    if (value >= highBit) {
-      value -= highBit * 2n;
+    if (value3 >= highBit) {
+      value3 -= highBit * 2n;
     }
   }
-  return Number(value);
+  return Number(value3);
 }
 function bitArrayValidateRange(bitArray, start3, end) {
   if (start3 < 0 || start3 > bitArray.bitSize || end < start3 || end > bitArray.bitSize) {
@@ -552,9 +552,9 @@ var Result = class _Result extends CustomType {
   }
 };
 var Ok = class extends Result {
-  constructor(value) {
+  constructor(value3) {
     super();
-    this[0] = value;
+    this[0] = value3;
   }
   // @internal
   isOk() {
@@ -1355,23 +1355,6 @@ var Dict = class _Dict {
 };
 var unequalDictSymbol = Symbol();
 
-// build/dev/javascript/gleam_stdlib/gleam/order.mjs
-var Lt = class extends CustomType {
-};
-var Eq = class extends CustomType {
-};
-var Gt = class extends CustomType {
-};
-function negate(order) {
-  if (order instanceof Lt) {
-    return new Gt();
-  } else if (order instanceof Eq) {
-    return new Eq();
-  } else {
-    return new Lt();
-  }
-}
-
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
 var Some = class extends CustomType {
   constructor(x0) {
@@ -1398,135 +1381,21 @@ function unwrap(option, default$) {
   }
 }
 
-// build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
-var Nil = void 0;
-var NOT_FOUND = {};
-function identity(x) {
-  return x;
-}
-function to_string(term) {
-  return term.toString();
-}
-var segmenter = void 0;
-function graphemes_iterator(string5) {
-  if (globalThis.Intl && Intl.Segmenter) {
-    segmenter ||= new Intl.Segmenter();
-    return segmenter.segment(string5)[Symbol.iterator]();
-  }
-}
-function pop_grapheme(string5) {
-  let first2;
-  const iterator = graphemes_iterator(string5);
-  if (iterator) {
-    first2 = iterator.next().value?.segment;
+// build/dev/javascript/gleam_stdlib/gleam/order.mjs
+var Lt = class extends CustomType {
+};
+var Eq = class extends CustomType {
+};
+var Gt = class extends CustomType {
+};
+function negate(order) {
+  if (order instanceof Lt) {
+    return new Gt();
+  } else if (order instanceof Eq) {
+    return new Eq();
   } else {
-    first2 = string5.match(/./su)?.[0];
+    return new Lt();
   }
-  if (first2) {
-    return new Ok([first2, string5.slice(first2.length)]);
-  } else {
-    return new Error(Nil);
-  }
-}
-function pop_codeunit(str) {
-  return [str.charCodeAt(0) | 0, str.slice(1)];
-}
-function lowercase(string5) {
-  return string5.toLowerCase();
-}
-function concat(xs) {
-  let result = "";
-  for (const x of xs) {
-    result = result + x;
-  }
-  return result;
-}
-function string_codeunit_slice(str, from2, length4) {
-  return str.slice(from2, from2 + length4);
-}
-function starts_with(haystack, needle) {
-  return haystack.startsWith(needle);
-}
-var unicode_whitespaces = [
-  " ",
-  // Space
-  "	",
-  // Horizontal tab
-  "\n",
-  // Line feed
-  "\v",
-  // Vertical tab
-  "\f",
-  // Form feed
-  "\r",
-  // Carriage return
-  "\x85",
-  // Next line
-  "\u2028",
-  // Line separator
-  "\u2029"
-  // Paragraph separator
-].join("");
-var trim_start_regex = new RegExp(`^[${unicode_whitespaces}]*`);
-var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
-function new_map() {
-  return Dict.new();
-}
-function map_to_list(map7) {
-  return List.fromArray(map7.entries());
-}
-function map_get(map7, key) {
-  const value = map7.get(key, NOT_FOUND);
-  if (value === NOT_FOUND) {
-    return new Error(Nil);
-  }
-  return new Ok(value);
-}
-function map_insert(key, value, map7) {
-  return map7.set(key, value);
-}
-function classify_dynamic(data) {
-  if (typeof data === "string") {
-    return "String";
-  } else if (typeof data === "boolean") {
-    return "Bool";
-  } else if (data instanceof Result) {
-    return "Result";
-  } else if (data instanceof List) {
-    return "List";
-  } else if (data instanceof BitArray) {
-    return "BitArray";
-  } else if (data instanceof Dict) {
-    return "Dict";
-  } else if (Number.isInteger(data)) {
-    return "Int";
-  } else if (Array.isArray(data)) {
-    return `Tuple of ${data.length} elements`;
-  } else if (typeof data === "number") {
-    return "Float";
-  } else if (data === null) {
-    return "Null";
-  } else if (data === void 0) {
-    return "Nil";
-  } else {
-    const type = typeof data;
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  }
-}
-function bitwise_and(x, y) {
-  return Number(BigInt(x) & BigInt(y));
-}
-function bitwise_or(x, y) {
-  return Number(BigInt(x) | BigInt(y));
-}
-function bitwise_exclusive_or(x, y) {
-  return Number(BigInt(x) ^ BigInt(y));
-}
-function bitwise_shift_left(x, y) {
-  return Number(BigInt(x) << BigInt(y));
-}
-function bitwise_shift_right(x, y) {
-  return Number(BigInt(x) >> BigInt(y));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/int.mjs
@@ -1542,42 +1411,6 @@ function compare(a, b) {
       return new Gt();
     }
   }
-}
-
-// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict2, key, value) {
-  return map_insert(key, value, dict2);
-}
-function reverse_and_concat(loop$remaining, loop$accumulator) {
-  while (true) {
-    let remaining = loop$remaining;
-    let accumulator = loop$accumulator;
-    if (remaining.hasLength(0)) {
-      return accumulator;
-    } else {
-      let first2 = remaining.head;
-      let rest = remaining.tail;
-      loop$remaining = rest;
-      loop$accumulator = prepend(first2, accumulator);
-    }
-  }
-}
-function do_keys_loop(loop$list, loop$acc) {
-  while (true) {
-    let list2 = loop$list;
-    let acc = loop$acc;
-    if (list2.hasLength(0)) {
-      return reverse_and_concat(acc, toList([]));
-    } else {
-      let key = list2.head[0];
-      let rest = list2.tail;
-      loop$list = rest;
-      loop$acc = prepend(key, acc);
-    }
-  }
-}
-function keys(dict2) {
-  return do_keys_loop(map_to_list(dict2), toList([]));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
@@ -2072,26 +1905,26 @@ function key_set_loop(loop$list, loop$key, loop$value, loop$inspected) {
   while (true) {
     let list2 = loop$list;
     let key = loop$key;
-    let value = loop$value;
+    let value3 = loop$value;
     let inspected = loop$inspected;
     if (list2.atLeastLength(1) && isEqual(list2.head[0], key)) {
       let k = list2.head[0];
       let rest$1 = list2.tail;
-      return reverse_and_prepend(inspected, prepend([k, value], rest$1));
+      return reverse_and_prepend(inspected, prepend([k, value3], rest$1));
     } else if (list2.atLeastLength(1)) {
       let first$1 = list2.head;
       let rest$1 = list2.tail;
       loop$list = rest$1;
       loop$key = key;
-      loop$value = value;
+      loop$value = value3;
       loop$inspected = prepend(first$1, inspected);
     } else {
-      return reverse(prepend([key, value], inspected));
+      return reverse(prepend([key, value3], inspected));
     }
   }
 }
-function key_set(list2, key, value) {
-  return key_set_loop(list2, key, value, toList([]));
+function key_set(list2, key, value3) {
+  return key_set_loop(list2, key, value3, toList([]));
 }
 function reduce(list2, fun) {
   if (list2.hasLength(0)) {
@@ -2142,6 +1975,15 @@ function is_ok(result) {
     return true;
   }
 }
+function map2(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(fun(x));
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
 function map_error(result, fun) {
   if (result.isOk()) {
     let x = result[0];
@@ -2164,6 +2006,301 @@ function then$(result, fun) {
   return try$(result, fun);
 }
 
+// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
+var DecodeError = class extends CustomType {
+  constructor(expected, found, path) {
+    super();
+    this.expected = expected;
+    this.found = found;
+    this.path = path;
+  }
+};
+function map_errors(result, f) {
+  return map_error(
+    result,
+    (_capture) => {
+      return map(_capture, f);
+    }
+  );
+}
+function string(data) {
+  return decode_string(data);
+}
+function do_any(decoders) {
+  return (data) => {
+    if (decoders.hasLength(0)) {
+      return new Error(
+        toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
+      );
+    } else {
+      let decoder = decoders.head;
+      let decoders$1 = decoders.tail;
+      let $ = decoder(data);
+      if ($.isOk()) {
+        let decoded = $[0];
+        return new Ok(decoded);
+      } else {
+        return do_any(decoders$1)(data);
+      }
+    }
+  };
+}
+function push_path(error, name) {
+  let name$1 = identity(name);
+  let decoder = do_any(
+    toList([
+      decode_string,
+      (x) => {
+        return map2(decode_int(x), to_string);
+      }
+    ])
+  );
+  let name$2 = (() => {
+    let $ = decoder(name$1);
+    if ($.isOk()) {
+      let name$22 = $[0];
+      return name$22;
+    } else {
+      let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
+      let _pipe$1 = concat(_pipe);
+      return identity(_pipe$1);
+    }
+  })();
+  let _record = error;
+  return new DecodeError(
+    _record.expected,
+    _record.found,
+    prepend(name$2, error.path)
+  );
+}
+function field(name, inner_type) {
+  return (value3) => {
+    let missing_field_error = new DecodeError("field", "nothing", toList([]));
+    return try$(
+      decode_field(value3, name),
+      (maybe_inner) => {
+        let _pipe = maybe_inner;
+        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
+        let _pipe$2 = try$(_pipe$1, inner_type);
+        return map_errors(
+          _pipe$2,
+          (_capture) => {
+            return push_path(_capture, name);
+          }
+        );
+      }
+    );
+  };
+}
+
+// build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
+var Nil = void 0;
+var NOT_FOUND = {};
+function identity(x) {
+  return x;
+}
+function parse_int(value3) {
+  if (/^[-+]?(\d+)$/.test(value3)) {
+    return new Ok(parseInt(value3));
+  } else {
+    return new Error(Nil);
+  }
+}
+function to_string(term) {
+  return term.toString();
+}
+var segmenter = void 0;
+function graphemes_iterator(string5) {
+  if (globalThis.Intl && Intl.Segmenter) {
+    segmenter ||= new Intl.Segmenter();
+    return segmenter.segment(string5)[Symbol.iterator]();
+  }
+}
+function pop_grapheme(string5) {
+  let first2;
+  const iterator = graphemes_iterator(string5);
+  if (iterator) {
+    first2 = iterator.next().value?.segment;
+  } else {
+    first2 = string5.match(/./su)?.[0];
+  }
+  if (first2) {
+    return new Ok([first2, string5.slice(first2.length)]);
+  } else {
+    return new Error(Nil);
+  }
+}
+function pop_codeunit(str) {
+  return [str.charCodeAt(0) | 0, str.slice(1)];
+}
+function lowercase(string5) {
+  return string5.toLowerCase();
+}
+function concat(xs) {
+  let result = "";
+  for (const x of xs) {
+    result = result + x;
+  }
+  return result;
+}
+function string_codeunit_slice(str, from2, length4) {
+  return str.slice(from2, from2 + length4);
+}
+function starts_with(haystack, needle) {
+  return haystack.startsWith(needle);
+}
+var unicode_whitespaces = [
+  " ",
+  // Space
+  "	",
+  // Horizontal tab
+  "\n",
+  // Line feed
+  "\v",
+  // Vertical tab
+  "\f",
+  // Form feed
+  "\r",
+  // Carriage return
+  "\x85",
+  // Next line
+  "\u2028",
+  // Line separator
+  "\u2029"
+  // Paragraph separator
+].join("");
+var trim_start_regex = new RegExp(`^[${unicode_whitespaces}]*`);
+var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
+function new_map() {
+  return Dict.new();
+}
+function map_to_list(map7) {
+  return List.fromArray(map7.entries());
+}
+function map_get(map7, key) {
+  const value3 = map7.get(key, NOT_FOUND);
+  if (value3 === NOT_FOUND) {
+    return new Error(Nil);
+  }
+  return new Ok(value3);
+}
+function map_insert(key, value3, map7) {
+  return map7.set(key, value3);
+}
+function classify_dynamic(data) {
+  if (typeof data === "string") {
+    return "String";
+  } else if (typeof data === "boolean") {
+    return "Bool";
+  } else if (data instanceof Result) {
+    return "Result";
+  } else if (data instanceof List) {
+    return "List";
+  } else if (data instanceof BitArray) {
+    return "BitArray";
+  } else if (data instanceof Dict) {
+    return "Dict";
+  } else if (Number.isInteger(data)) {
+    return "Int";
+  } else if (Array.isArray(data)) {
+    return `Tuple of ${data.length} elements`;
+  } else if (typeof data === "number") {
+    return "Float";
+  } else if (data === null) {
+    return "Null";
+  } else if (data === void 0) {
+    return "Nil";
+  } else {
+    const type = typeof data;
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+}
+function decoder_error(expected, got) {
+  return decoder_error_no_classify(expected, classify_dynamic(got));
+}
+function decoder_error_no_classify(expected, got) {
+  return new Error(
+    List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
+  );
+}
+function decode_string(data) {
+  return typeof data === "string" ? new Ok(data) : decoder_error("String", data);
+}
+function decode_int(data) {
+  return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
+}
+function decode_field(value3, name) {
+  const not_a_map_error = () => decoder_error("Dict", value3);
+  if (value3 instanceof Dict || value3 instanceof WeakMap || value3 instanceof Map) {
+    const entry = map_get(value3, name);
+    return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
+  } else if (value3 === null) {
+    return not_a_map_error();
+  } else if (Object.getPrototypeOf(value3) == Object.prototype) {
+    return try_get_field(value3, name, () => new Ok(new None()));
+  } else {
+    return try_get_field(value3, name, not_a_map_error);
+  }
+}
+function try_get_field(value3, field3, or_else) {
+  try {
+    return field3 in value3 ? new Ok(new Some(value3[field3])) : or_else();
+  } catch {
+    return or_else();
+  }
+}
+function bitwise_and(x, y) {
+  return Number(BigInt(x) & BigInt(y));
+}
+function bitwise_or(x, y) {
+  return Number(BigInt(x) | BigInt(y));
+}
+function bitwise_exclusive_or(x, y) {
+  return Number(BigInt(x) ^ BigInt(y));
+}
+function bitwise_shift_left(x, y) {
+  return Number(BigInt(x) << BigInt(y));
+}
+function bitwise_shift_right(x, y) {
+  return Number(BigInt(x) >> BigInt(y));
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/dict.mjs
+function insert(dict2, key, value3) {
+  return map_insert(key, value3, dict2);
+}
+function reverse_and_concat(loop$remaining, loop$accumulator) {
+  while (true) {
+    let remaining = loop$remaining;
+    let accumulator = loop$accumulator;
+    if (remaining.hasLength(0)) {
+      return accumulator;
+    } else {
+      let first2 = remaining.head;
+      let rest = remaining.tail;
+      loop$remaining = rest;
+      loop$accumulator = prepend(first2, accumulator);
+    }
+  }
+}
+function do_keys_loop(loop$list, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return reverse_and_concat(acc, toList([]));
+    } else {
+      let key = list2.head[0];
+      let rest = list2.tail;
+      loop$list = rest;
+      loop$acc = prepend(key, acc);
+    }
+  }
+}
+function keys(dict2) {
+  return do_keys_loop(map_to_list(dict2), toList([]));
+}
+
 // build/dev/javascript/gleam_stdlib/gleam_stdlib_decode_ffi.mjs
 function index2(data, key) {
   if (data instanceof Dict || data instanceof WeakMap || data instanceof Map) {
@@ -2176,9 +2313,9 @@ function index2(data, key) {
   const key_is_int = Number.isInteger(key);
   if (key_is_int && key >= 0 && key < 8 && data instanceof List) {
     let i = 0;
-    for (const value of data) {
+    for (const value3 of data) {
       if (i === key)
-        return new Ok(new Some(value));
+        return new Ok(new Some(value3));
       i++;
     }
     return new Error("Indexable");
@@ -2195,7 +2332,7 @@ function int(data) {
     return new Ok(data);
   return new Error(0);
 }
-function string(data) {
+function string2(data) {
   if (typeof data === "string")
     return new Ok(data);
   return new Error(0);
@@ -2296,12 +2433,12 @@ function decode_int2(data) {
 }
 var int2 = /* @__PURE__ */ new Decoder(decode_int2);
 function decode_string2(data) {
-  return run_dynamic_function(data, "String", string);
+  return run_dynamic_function(data, "String", string2);
 }
-var string2 = /* @__PURE__ */ new Decoder(decode_string2);
-function push_path(layer, path) {
+var string3 = /* @__PURE__ */ new Decoder(decode_string2);
+function push_path2(layer, path) {
   let decoder = one_of(
-    string2,
+    string3,
     toList([
       (() => {
         let _pipe = int2;
@@ -2344,7 +2481,7 @@ function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_mis
     let handle_miss = loop$handle_miss;
     if (path.hasLength(0)) {
       let _pipe = inner(data);
-      return push_path(_pipe, reverse(position));
+      return push_path2(_pipe, reverse(position));
     } else {
       let key = path.head;
       let path$1 = path.tail;
@@ -2366,7 +2503,7 @@ function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_mis
           default$,
           toList([new DecodeError2(kind, classify_dynamic(data), toList([]))])
         ];
-        return push_path(_pipe, reverse(position));
+        return push_path2(_pipe, reverse(position));
       }
     }
   }
@@ -2386,7 +2523,7 @@ function subfield(field_path, field_decoder, next) {
             default$,
             toList([new DecodeError2("Field", "Nothing", toList([]))])
           ];
-          return push_path(_pipe, reverse(position));
+          return push_path2(_pipe, reverse(position));
         }
       );
       let out = $[0];
@@ -2398,7 +2535,7 @@ function subfield(field_path, field_decoder, next) {
     }
   );
 }
-function field(field_name, field_decoder, next) {
+function field2(field_name, field_decoder, next) {
   return subfield(toList([field_name]), field_decoder, next);
 }
 
@@ -2543,7 +2680,7 @@ function parse(json, decoder) {
 function to_string2(json) {
   return json_to_string(json);
 }
-function string3(input2) {
+function string4(input2) {
   return identity2(input2);
 }
 function int3(input2) {
@@ -2576,6 +2713,18 @@ function from(effect) {
 }
 function none() {
   return new Effect(toList([]));
+}
+function batch(effects) {
+  return new Effect(
+    fold(
+      effects,
+      toList([]),
+      (b, _use1) => {
+        let a = _use1.all;
+        return append(b, a);
+      }
+    )
+  );
 }
 
 // build/dev/javascript/lustre/lustre/internals/vdom.mjs
@@ -2676,11 +2825,11 @@ function handlers(element2) {
 }
 
 // build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value) {
-  return new Attribute(name, identity(value), false);
+function attribute(name, value3) {
+  return new Attribute(name, identity(value3), false);
 }
-function property(name, value) {
-  return new Attribute(name, identity(value), true);
+function property(name, value3) {
+  return new Attribute(name, identity(value3), true);
 }
 function on(name, handler) {
   return new Event("on" + name, handler);
@@ -2691,8 +2840,14 @@ function class$(name) {
 function type_(name) {
   return attribute("type", name);
 }
+function value(val) {
+  return attribute("value", val);
+}
 function checked(is_checked) {
   return property("checked", is_checked);
+}
+function placeholder(text2) {
+  return attribute("placeholder", text2);
 }
 function disabled(is_disabled) {
   return property("disabled", is_disabled);
@@ -2933,15 +3088,15 @@ function createElementNode({ prev, next, dispatch, stack }) {
   const delegated = [];
   for (const attr of next.attrs) {
     const name = attr[0];
-    const value = attr[1];
+    const value3 = attr[1];
     if (attr.as_property) {
-      if (el[name] !== value)
-        el[name] = value;
+      if (el[name] !== value3)
+        el[name] = value3;
       if (canMorph)
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
-      const callback = dispatch(value, eventName === "input");
+      const callback = dispatch(value3, eventName === "input");
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
@@ -2955,25 +3110,25 @@ function createElementNode({ prev, next, dispatch, stack }) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el.setAttribute(name, value);
+      el.setAttribute(name, value3);
       if (canMorph) {
         prevHandlers.delete(eventName);
         prevAttributes.delete(name);
       }
     } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
-      el.setAttribute(name, value);
-      delegated.push([name.slice(10), value]);
+      el.setAttribute(name, value3);
+      delegated.push([name.slice(10), value3]);
     } else if (name === "class") {
-      className = className === null ? value : className + " " + value;
+      className = className === null ? value3 : className + " " + value3;
     } else if (name === "style") {
-      style2 = style2 === null ? value : style2 + value;
+      style2 = style2 === null ? value3 : style2 + value3;
     } else if (name === "dangerous-unescaped-html") {
-      innerHTML = value;
+      innerHTML = value3;
     } else {
-      if (el.getAttribute(name) !== value)
-        el.setAttribute(name, value);
+      if (el.getAttribute(name) !== value3)
+        el.setAttribute(name, value3);
       if (name === "value" || name === "selected")
-        el[name] = value;
+        el[name] = value3;
       if (canMorph)
         prevAttributes.delete(name);
     }
@@ -3000,9 +3155,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   if (next.tag === "slot") {
     window.queueMicrotask(() => {
       for (const child of el.assignedElements()) {
-        for (const [name, value] of delegated) {
+        for (const [name, value3] of delegated) {
           if (!child.hasAttribute(name)) {
-            child.setAttribute(name, value);
+            child.setAttribute(name, value3);
           }
         }
       }
@@ -3128,9 +3283,9 @@ function diffKeyedChild(prevChild, child, el, stack, incomingKeyedChildren, keye
     return prevChild;
   }
   if (!keyedChild && prevChild !== null) {
-    const placeholder = document.createTextNode("");
-    el.insertBefore(placeholder, prevChild);
-    stack.unshift({ prev: placeholder, next: child, parent: el });
+    const placeholder2 = document.createTextNode("");
+    el.insertBefore(placeholder2, prevChild);
+    stack.unshift({ prev: placeholder2, next: child, parent: el });
     return prevChild;
   }
   if (!keyedChild || keyedChild === prevChild) {
@@ -3169,13 +3324,13 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
    */
-  static start({ init: init2, update: update3, view: view4 }, selector, flags) {
+  static start({ init: init2, update: update2, view: view5 }, selector, flags) {
     if (!is_browser())
       return new Error(new NotABrowser());
     const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
     if (!root)
       return new Error(new ElementNotFound(selector));
-    const app = new _LustreClientApplication(root, init2(flags), update3, view4);
+    const app = new _LustreClientApplication(root, init2(flags), update2, view5);
     return new Ok((action) => app.send(action));
   }
   /**
@@ -3186,11 +3341,11 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {LustreClientApplication}
    */
-  constructor(root, [init2, effects], update3, view4) {
+  constructor(root, [init2, effects], update2, view5) {
     this.root = root;
     this.#model = init2;
-    this.#update = update3;
-    this.#view = view4;
+    this.#update = update2;
+    this.#view = view5;
     this.#tickScheduled = window.setTimeout(
       () => this.#tick(effects.all.toArray(), true),
       0
@@ -3305,20 +3460,20 @@ var LustreClientApplication = class _LustreClientApplication {
 };
 var start = LustreClientApplication.start;
 var LustreServerApplication = class _LustreServerApplication {
-  static start({ init: init2, update: update3, view: view4, on_attribute_change }, flags) {
+  static start({ init: init2, update: update2, view: view5, on_attribute_change }, flags) {
     const app = new _LustreServerApplication(
       init2(flags),
-      update3,
-      view4,
+      update2,
+      view5,
       on_attribute_change
     );
     return new Ok((action) => app.send(action));
   }
-  constructor([model, effects], update3, view4, on_attribute_change) {
+  constructor([model, effects], update2, view5, on_attribute_change) {
     this.#model = model;
-    this.#update = update3;
-    this.#view = view4;
-    this.#html = view4(model);
+    this.#update = update2;
+    this.#view = view5;
+    this.#html = view5(model);
     this.#onAttributeChange = on_attribute_change;
     this.#renderers = /* @__PURE__ */ new Map();
     this.#handlers = handlers(this.#html);
@@ -3419,11 +3574,11 @@ var is_browser = () => globalThis.window && window.document;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init2, update3, view4, on_attribute_change) {
+  constructor(init2, update2, view5, on_attribute_change) {
     super();
     this.init = init2;
-    this.update = update3;
-    this.view = view4;
+    this.update = update2;
+    this.view = view5;
     this.on_attribute_change = on_attribute_change;
   }
 };
@@ -3435,8 +3590,8 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init2, update3, view4) {
-  return new App(init2, update3, view4, new None());
+function application(init2, update2, view5) {
+  return new App(init2, update2, view5, new None());
 }
 function start2(app, selector, flags) {
   return guard(
@@ -3521,17 +3676,17 @@ function to_squares(b) {
       _pipe,
       [b.val, toList([])],
       (acc, i) => {
-        let board2 = acc[0];
+        let board3 = acc[0];
         let l = acc[1];
         let l$1 = (() => {
-          let $2 = bitwise_and(1, board2) > 0;
+          let $2 = bitwise_and(1, board3) > 0;
           if ($2) {
             return prepend(i, l);
           } else {
             return l;
           }
         })();
-        let board$1 = bitwise_shift_right(board2, 1);
+        let board$1 = bitwise_shift_right(board3, 1);
         let $ = board$1 > 0;
         if ($) {
           return new Continue([board$1, l$1]);
@@ -3791,10 +3946,10 @@ var Red = class extends CustomType {
 var Yellow = class extends CustomType {
 };
 var Player = class extends CustomType {
-  constructor(turn, board2) {
+  constructor(turn, board3) {
     super();
     this.turn = turn;
-    this.board = board2;
+    this.board = board3;
   }
 };
 var Win = class extends CustomType {
@@ -3821,7 +3976,7 @@ function check_consecutive(bitboard, shift, iterations) {
     return fold(
       _pipe,
       bitboard,
-      (board2, i) => {
+      (board3, i) => {
         let $ = shift(bitboard, i);
         if (!$.isOk()) {
           throw makeError(
@@ -3834,7 +3989,7 @@ function check_consecutive(bitboard, shift, iterations) {
           );
         }
         let shifted_board = $[0];
-        let $1 = bitboard_and(board2, shifted_board);
+        let $1 = bitboard_and(board3, shifted_board);
         if (!$1.isOk()) {
           throw makeError(
             "let_assert",
@@ -3852,7 +4007,7 @@ function check_consecutive(bitboard, shift, iterations) {
   })();
   return final_board.val > 0;
 }
-function check_win(board2) {
+function check_win(board3) {
   let _pipe = toList([
     shift_north,
     shift_east,
@@ -3862,7 +4017,7 @@ function check_win(board2) {
   let _pipe$1 = map(
     _pipe,
     (shift) => {
-      return check_consecutive(board2, shift, 4);
+      return check_consecutive(board3, shift, 4);
     }
   );
   return any(_pipe$1, (bool3) => {
@@ -3921,8 +4076,8 @@ function check_draw(active, inactive) {
       { value: $ }
     );
   }
-  let board2 = $[0];
-  return is_empty(available_moves(board2));
+  let board3 = $[0];
+  return is_empty(available_moves(board3));
 }
 function check_game_state(active, inactive) {
   let $ = check_win(active.board);
@@ -3938,8 +4093,8 @@ function check_game_state(active, inactive) {
   }
 }
 var connect_4_height = 6;
-function column_to_move(game, column) {
-  let $ = bitboard_or(game.active.board, game.inactive.board);
+function column_to_move(game2, column) {
+  let $ = bitboard_or(game2.active.board, game2.inactive.board);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
@@ -4017,8 +4172,8 @@ function column_to_move(game, column) {
   let move = $5[0];
   return move;
 }
-function update_game(game, column) {
-  let $ = bitboard_or(game.active.board, game.inactive.board);
+function update_game(game2, column) {
+  let $ = bitboard_or(game2.active.board, game2.inactive.board);
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
@@ -4033,8 +4188,8 @@ function update_game(game, column) {
   let moves = available_moves(full_board);
   let is_legal = contains(moves, column);
   if (is_legal) {
-    let move = column_to_move(game, column);
-    let $1 = bitboard_or(move, game.active.board);
+    let move = column_to_move(game2, column);
+    let $1 = bitboard_or(move, game2.active.board);
     if (!$1.isOk()) {
       throw makeError(
         "let_assert",
@@ -4047,13 +4202,13 @@ function update_game(game, column) {
     }
     let updated_board = $1[0];
     let active = (() => {
-      let _record = game.active;
+      let _record = game2.active;
       return new Player(_record.turn, updated_board);
     })();
     let updated_game = new Game(
-      game.inactive,
+      game2.inactive,
       active,
-      check_game_state(active, game.inactive)
+      check_game_state(active, game2.inactive)
     );
     let $2 = (() => {
       let _pipe = move;
@@ -4073,7 +4228,7 @@ function update_game(game, column) {
     let last_cell_updated = $2[0];
     return [updated_game, last_cell_updated];
   } else {
-    return [game, -1];
+    return [game2, -1];
   }
 }
 
@@ -5025,8 +5180,8 @@ function from_uri(uri) {
     }
   );
 }
-function set_header(request, key, value) {
-  let headers = key_set(request.headers, lowercase(key), value);
+function set_header(request, key, value3) {
+  let headers = key_set(request.headers, lowercase(key), value3);
   let _record = request;
   return new Request(
     _record.method,
@@ -5083,22 +5238,22 @@ var PromiseLayer = class _PromiseLayer {
   constructor(promise) {
     this.promise = promise;
   }
-  static wrap(value) {
-    return value instanceof Promise ? new _PromiseLayer(value) : value;
+  static wrap(value3) {
+    return value3 instanceof Promise ? new _PromiseLayer(value3) : value3;
   }
-  static unwrap(value) {
-    return value instanceof _PromiseLayer ? value.promise : value;
+  static unwrap(value3) {
+    return value3 instanceof _PromiseLayer ? value3.promise : value3;
   }
 };
-function resolve(value) {
-  return Promise.resolve(PromiseLayer.wrap(value));
+function resolve(value3) {
+  return Promise.resolve(PromiseLayer.wrap(value3));
 }
 function then_await(promise, fn) {
-  return promise.then((value) => fn(PromiseLayer.unwrap(value)));
+  return promise.then((value3) => fn(PromiseLayer.unwrap(value3)));
 }
 function map_promise(promise, fn) {
   return promise.then(
-    (value) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value)))
+    (value3) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value3)))
   );
 }
 function rescue(promise, fn) {
@@ -5343,22 +5498,28 @@ var PlayerTypes = class extends CustomType {
   }
 };
 var GameModel = class extends CustomType {
-  constructor(game, player_types, move_counter, move_history, highlight_column) {
+  constructor(game2, player_types, move_counter, move_history, highlight_column) {
     super();
-    this.game = game;
+    this.game = game2;
     this.player_types = player_types;
     this.move_counter = move_counter;
     this.move_history = move_history;
     this.highlight_column = highlight_column;
   }
 };
-var GotoMainMenu = class extends CustomType {
+var UserClickedMainMenu = class extends CustomType {
 };
-var ChooseBot = class extends CustomType {
+var UserSelectedBot = class extends CustomType {
   constructor(t, bot_name) {
     super();
     this.t = t;
     this.bot_name = bot_name;
+  }
+};
+var UserEnteredNumberOfGames = class extends CustomType {
+  constructor(value3) {
+    super();
+    this.value = value3;
   }
 };
 var NewGame = class extends CustomType {
@@ -5373,12 +5534,6 @@ var Move = class extends CustomType {
     this.column = column;
   }
 };
-var ReceivedMove = class extends CustomType {
-  constructor(x0) {
-    super();
-    this[0] = x0;
-  }
-};
 var HighlightColumn = class extends CustomType {
   constructor(column) {
     super();
@@ -5386,6 +5541,20 @@ var HighlightColumn = class extends CustomType {
   }
 };
 var UnhighlightColumn = class extends CustomType {
+};
+var UserStartedAIBattle = class extends CustomType {
+  constructor(red, yellow, number_of_games) {
+    super();
+    this.red = red;
+    this.yellow = yellow;
+    this.number_of_games = number_of_games;
+  }
+};
+var APIReceivedMove = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
 };
 function get_active_player_type(model) {
   let $ = model.game.active.turn;
@@ -5420,10 +5589,88 @@ function new_game(red, yellow) {
     -1
   );
 }
+function update_model(model, column) {
+  let $ = update_game(model.game, column);
+  let updated_game = $[0];
+  let last_cell_updated = $[1];
+  let has_game_changed = !isEqual(updated_game, model.game);
+  if (has_game_changed) {
+    let _record = model;
+    return new GameModel(
+      updated_game,
+      _record.player_types,
+      model.move_counter + 1,
+      insert(
+        model.move_history,
+        last_cell_updated,
+        new DebugLog(
+          model.move_counter,
+          model.game.active.turn,
+          updated_game.state
+        )
+      ),
+      model.highlight_column
+    );
+  } else {
+    return model;
+  }
+}
+
+// build/dev/javascript/connect_4/backend_api.mjs
+function get_move_api(model, bot_name, game_id) {
+  let url = "http://localhost:8000/" + bot_name;
+  let req_body = (() => {
+    let _pipe = (() => {
+      let $ = model.game.active.turn;
+      if ($ instanceof Red) {
+        return toList([
+          ["red", int3(model.game.active.board.val)],
+          ["yellow", int3(model.game.inactive.board.val)],
+          ["play_for", string4("red")],
+          ["game_id", int3(game_id)]
+        ]);
+      } else {
+        return toList([
+          ["red", int3(model.game.inactive.board.val)],
+          ["yellow", int3(model.game.active.board.val)],
+          ["play_for", string4("yellow")],
+          ["game_id", int3(game_id)]
+        ]);
+      }
+    })();
+    return object2(_pipe);
+  })();
+  let decoder = field2(
+    "move",
+    int2,
+    (move) => {
+      return field2(
+        "game_id",
+        int2,
+        (game_id2) => {
+          return success([move, game_id2]);
+        }
+      );
+    }
+  );
+  return post(
+    url,
+    req_body,
+    expect_json(
+      decoder,
+      (var0) => {
+        return new APIReceivedMove(var0);
+      }
+    )
+  );
+}
 
 // build/dev/javascript/lustre/lustre/element/html.mjs
 function h1(attrs, children2) {
   return element("h1", attrs, children2);
+}
+function h2(attrs, children2) {
+  return element("h2", attrs, children2);
 }
 function div(attrs, children2) {
   return element("div", attrs, children2);
@@ -5453,6 +5700,144 @@ function legend(attrs, children2) {
   return element("legend", attrs, children2);
 }
 
+// build/dev/javascript/connect_4/views/ai_battle.mjs
+var Model2 = class extends CustomType {
+  constructor(games2) {
+    super();
+    this.games = games2;
+  }
+};
+function new$4(red, yellow, number_of_games) {
+  let $ = parse_int(number_of_games);
+  if (!$.isOk()) {
+    throw makeError(
+      "let_assert",
+      "views/ai_battle",
+      23,
+      "new",
+      "Pattern match failed, no pattern matched the value.",
+      { value: $ }
+    );
+  }
+  let number_of_games$1 = $[0];
+  let _pipe = range(1, number_of_games$1);
+  let _pipe$1 = fold(
+    _pipe,
+    new_map(),
+    (acc, i) => {
+      return insert(acc, i, new_game(new AI(red), new AI(yellow)));
+    }
+  );
+  return new Model2(_pipe$1);
+}
+function init_get_first_moves(red, model) {
+  let _pipe = model.games;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = map(
+    _pipe$1,
+    (game_tuple) => {
+      let game_id = game_tuple[0];
+      let g = game_tuple[1];
+      return get_move_api(g, red, game_id);
+    }
+  );
+  return batch(_pipe$2);
+}
+function convert_bitboard_to_set(bitboard) {
+  return from_list2(to_squares(bitboard));
+}
+function turn_to_color(t) {
+  if (t instanceof Red) {
+    return "red";
+  } else {
+    return "yellow";
+  }
+}
+function board(model) {
+  let active_board = convert_bitboard_to_set(model.game.active.board);
+  let inactive_board = convert_bitboard_to_set(model.game.inactive.board);
+  let board_rows = (() => {
+    let _pipe = range(connect_4_height - 1, 0);
+    return fold(
+      _pipe,
+      toList([]),
+      (cells, i) => {
+        let row = (() => {
+          let _pipe$1 = range(0, connect_4_width - 1);
+          return map(
+            _pipe$1,
+            (j) => {
+              let cell_id = i * connect_4_width + j;
+              let color = (() => {
+                let $ = contains(active_board, cell_id);
+                let $1 = contains(inactive_board, cell_id);
+                if ($ && !$1) {
+                  return turn_to_color(model.game.active.turn);
+                } else if (!$ && $1) {
+                  return turn_to_color(model.game.inactive.turn);
+                } else {
+                  return "white";
+                }
+              })();
+              let text2 = (() => {
+                let $ = map_get(model.move_history, cell_id);
+                if ($.isOk()) {
+                  let log2 = $[0];
+                  return to_string(log2.move_count);
+                } else {
+                  return "";
+                }
+              })();
+              let cell_attributes = toList([class$("cell")]);
+              return div(
+                cell_attributes,
+                toList([
+                  div(
+                    toList([class$("circle " + color)]),
+                    toList([text(text2)])
+                  )
+                ])
+              );
+            }
+          );
+        })();
+        return append(cells, row);
+      }
+    );
+  })();
+  return div(toList([class$("board")]), board_rows);
+}
+function game(g, game_id) {
+  return div(
+    toList([class$("vstack")]),
+    toList([
+      h2(toList([]), toList([text(to_string(game_id))])),
+      board(g)
+    ])
+  );
+}
+function games(model) {
+  let _pipe = model.games;
+  let _pipe$1 = map_to_list(_pipe);
+  let _pipe$2 = sort(
+    _pipe$1,
+    (a, b) => {
+      return compare(a[0], b[0]);
+    }
+  );
+  return map(
+    _pipe$2,
+    (game_tuple) => {
+      let game_id = game_tuple[0];
+      let g = game_tuple[1];
+      return game(g, game_id);
+    }
+  );
+}
+function view(model) {
+  return div(toList([class$("ai-battle")]), games(model));
+}
+
 // build/dev/javascript/lustre/lustre/event.mjs
 function on2(name, handler) {
   return on(name, handler);
@@ -5472,73 +5857,23 @@ function on_mouse_over(msg) {
     return new Ok(msg);
   });
 }
-
-// build/dev/javascript/connect_4/views/game.mjs
-function get_move_api(model, bot_name) {
-  let url = "http://localhost:8000/" + bot_name;
-  let req_body = (() => {
-    let _pipe = (() => {
-      let $ = model.game.active.turn;
-      if ($ instanceof Red) {
-        return toList([
-          ["red", int3(model.game.active.board.val)],
-          ["yellow", int3(model.game.inactive.board.val)],
-          ["play_for", string3("red")]
-        ]);
-      } else {
-        return toList([
-          ["red", int3(model.game.inactive.board.val)],
-          ["yellow", int3(model.game.active.board.val)],
-          ["play_for", string3("yellow")]
-        ]);
-      }
-    })();
-    return object2(_pipe);
-  })();
-  let decoder = field(
-    "move",
-    int2,
-    (move) => {
-      return success(move);
+function value2(event2) {
+  let _pipe = event2;
+  return field("target", field("value", string))(
+    _pipe
+  );
+}
+function on_input(msg) {
+  return on2(
+    "input",
+    (event2) => {
+      let _pipe = value2(event2);
+      return map2(_pipe, msg);
     }
   );
-  return post(
-    url,
-    req_body,
-    expect_json(
-      decoder,
-      (var0) => {
-        return new ReceivedMove(var0);
-      }
-    )
-  );
 }
-function update_model(model, column) {
-  let $ = update_game(model.game, column);
-  let updated_game = $[0];
-  let last_cell_updated = $[1];
-  let has_game_changed = !isEqual(updated_game, model.game);
-  if (has_game_changed) {
-    let _record = model;
-    return new GameModel(
-      updated_game,
-      _record.player_types,
-      model.move_counter + 1,
-      insert(
-        model.move_history,
-        last_cell_updated,
-        new DebugLog(
-          model.move_counter,
-          model.game.active.turn,
-          updated_game.state
-        )
-      ),
-      model.highlight_column
-    );
-  } else {
-    return model;
-  }
-}
+
+// build/dev/javascript/connect_4/views/game.mjs
 function update_highlighted_column(model, column) {
   let _record = model;
   return new GameModel(
@@ -5604,7 +5939,7 @@ function header(model) {
             toList([text("Restart")])
           ),
           button(
-            toList([on_click(new GotoMainMenu())]),
+            toList([on_click(new UserClickedMainMenu())]),
             toList([text("Main menu")])
           )
         ])
@@ -5612,19 +5947,19 @@ function header(model) {
     ])
   );
 }
-function convert_bitboard_to_set(bitboard) {
+function convert_bitboard_to_set2(bitboard) {
   return from_list2(to_squares(bitboard));
 }
-function turn_to_color(t) {
+function turn_to_color2(t) {
   if (t instanceof Red) {
     return "red";
   } else {
     return "yellow";
   }
 }
-function board(model) {
-  let active_board = convert_bitboard_to_set(model.game.active.board);
-  let inactive_board = convert_bitboard_to_set(model.game.inactive.board);
+function board2(model) {
+  let active_board = convert_bitboard_to_set2(model.game.active.board);
+  let inactive_board = convert_bitboard_to_set2(model.game.inactive.board);
   let board_rows = (() => {
     let _pipe = range(connect_4_height - 1, 0);
     return fold(
@@ -5641,9 +5976,9 @@ function board(model) {
                 let $ = contains(active_board, cell_id);
                 let $1 = contains(inactive_board, cell_id);
                 if ($ && !$1) {
-                  return turn_to_color(model.game.active.turn);
+                  return turn_to_color2(model.game.active.turn);
                 } else if (!$ && $1) {
-                  return turn_to_color(model.game.inactive.turn);
+                  return turn_to_color2(model.game.inactive.turn);
                 } else {
                   return "white";
                 }
@@ -5751,37 +6086,56 @@ function debug_log(model) {
   })();
   return ul(toList([]), logs);
 }
-function view(model) {
+function view2(model) {
   return div(
     toList([class$("game")]),
     toList([
       h1(toList([]), toList([text("Connect 4 LOL")])),
       header(model),
-      board(model),
+      board2(model),
       debug_log(model)
     ])
   );
 }
 
 // build/dev/javascript/connect_4/views/main_menu.mjs
-var Model2 = class extends CustomType {
-  constructor(red, yellow) {
+var Model3 = class extends CustomType {
+  constructor(red, yellow, number_of_games) {
     super();
     this.red = red;
     this.yellow = yellow;
+    this.number_of_games = number_of_games;
   }
 };
-function new$4() {
-  return new Model2("", "");
+function new$5() {
+  return new Model3("", "", "");
 }
-function update(model, turn, bot_name) {
+function is_number_of_games_valid(model) {
+  let $ = parse_int(model.number_of_games);
+  if ($.isOk()) {
+    let parsed = $[0];
+    return 0 < parsed && parsed <= 30;
+  } else {
+    return false;
+  }
+}
+function is_form_valid(model) {
+  return model.red !== "" && model.yellow !== "" && is_number_of_games_valid(
+    model
+  );
+}
+function update_selected_bot(model, turn, bot_name) {
   if (turn instanceof Red) {
     let _record = model;
-    return new Model2(bot_name, _record.yellow);
+    return new Model3(bot_name, _record.yellow, _record.number_of_games);
   } else {
     let _record = model;
-    return new Model2(_record.red, bot_name);
+    return new Model3(_record.red, bot_name, _record.number_of_games);
   }
+}
+function update_number_of_games(model, number_of_games) {
+  let _record = model;
+  return new Model3(_record.red, _record.yellow, number_of_games);
 }
 function home_page() {
   return div(
@@ -5799,7 +6153,7 @@ function home_page() {
       button(
         toList([
           on_click(
-            new NewGame(new PlayerTypes(new Human(), new AI("minimax/3")))
+            new NewGame(new PlayerTypes(new Human(), new AI("minimax/5")))
           )
         ]),
         toList([text("VS AI")])
@@ -5807,7 +6161,9 @@ function home_page() {
       button(
         toList([
           on_click(
-            new NewGame(new PlayerTypes(new AI("move"), new AI("minimax/5")))
+            new NewGame(
+              new PlayerTypes(new AI("minimax/2"), new AI("minimax/5"))
+            )
           )
         ]),
         toList([text("AI VS AI")])
@@ -5816,10 +6172,10 @@ function home_page() {
   );
 }
 function bot_radio_button(name, selected, turn) {
-  echo(name, "src/views/main_menu.gleam", 75);
-  echo(selected, "src/views/main_menu.gleam", 76);
+  echo(name, "src/views/main_menu.gleam", 106);
+  echo(selected, "src/views/main_menu.gleam", 107);
   return div(
-    toList([on_click(new ChooseBot(turn, name))]),
+    toList([on_click(new UserSelectedBot(turn, name))]),
     toList([
       input(
         toList([
@@ -5838,10 +6194,34 @@ function player_setup(turn, selected) {
       fieldset(
         toList([class$("vstack")]),
         toList([
-          legend(toList([]), toList([text("Choose a bot:")])),
+          legend(
+            toList([]),
+            toList([text("UserSelected a bot:")])
+          ),
           bot_radio_button("minimax/1", selected, turn),
           bot_radio_button("minimax/3", selected, turn),
           bot_radio_button("minimax/5", selected, turn)
+        ])
+      )
+    ])
+  );
+}
+function number_of_games_field(model) {
+  return div(
+    toList([class$("hstack")]),
+    toList([
+      label(toList([]), toList([text("Number of games: ")])),
+      input(
+        toList([
+          class$("flex-1"),
+          placeholder("Enter number of games to run"),
+          value(model.number_of_games),
+          type_("number"),
+          on_input(
+            (var0) => {
+              return new UserEnteredNumberOfGames(var0);
+            }
+          )
         ])
       )
     ])
@@ -5858,12 +6238,15 @@ function ai_match_config_pop_up(model) {
           player_setup(new Yellow(), model.yellow)
         ])
       ),
+      number_of_games_field(model),
       button(
         toList([
-          disabled(model.red === "" || model.yellow === ""),
+          disabled(!is_form_valid(model)),
           on_click(
-            new NewGame(
-              new PlayerTypes(new AI(model.red), new AI(model.yellow))
+            new UserStartedAIBattle(
+              model.red,
+              model.yellow,
+              model.number_of_games
             )
           )
         ]),
@@ -5872,17 +6255,17 @@ function ai_match_config_pop_up(model) {
     ])
   );
 }
-function view2(model) {
+function view3(model) {
   return div(
     toList([]),
     toList([home_page(), ai_match_config_pop_up(model)])
   );
 }
-function echo(value, file2, line) {
+function echo(value3, file2, line) {
   const grey = "\x1B[90m";
   const reset_color = "\x1B[39m";
   const file_line = `${file2}:${line}`;
-  const string_value = echo$inspect(value);
+  const string_value = echo$inspect(value3);
   if (typeof process === "object" && process.stderr?.write) {
     const string5 = `${grey}${file_line}${reset_color}
 ${string_value}
@@ -5898,7 +6281,7 @@ ${string_value}
 ${string_value}`;
     console.log(string5);
   }
-  return value;
+  return value3;
 }
 function echo$inspectString(str) {
   let new_str = '"';
@@ -5929,22 +6312,22 @@ function echo$inspectDict(map7) {
   let body = "dict.from_list([";
   let first2 = true;
   let key_value_pairs = [];
-  map7.forEach((value, key) => {
-    key_value_pairs.push([key, value]);
+  map7.forEach((value3, key) => {
+    key_value_pairs.push([key, value3]);
   });
   key_value_pairs.sort();
-  key_value_pairs.forEach(([key, value]) => {
+  key_value_pairs.forEach(([key, value3]) => {
     if (!first2)
       body = body + ", ";
-    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value) + ")";
+    body = body + "#(" + echo$inspect(key) + ", " + echo$inspect(value3) + ")";
     first2 = false;
   });
   return body + "])";
 }
 function echo$inspectCustomType(record) {
   const props = Object.keys(record).map((label2) => {
-    const value = echo$inspect(record[label2]);
-    return isNaN(parseInt(label2)) ? `${label2}: ${value}` : value;
+    const value3 = echo$inspect(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -6015,9 +6398,9 @@ function echo$inspectBitArray(bitArray) {
     return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}>>`;
   }
 }
-function echo$isDict(value) {
+function echo$isDict(value3) {
   try {
-    return value instanceof Dict;
+    return value3 instanceof Dict;
   } catch {
     return false;
   }
@@ -6036,9 +6419,15 @@ var Game2 = class extends CustomType {
     this.model = model;
   }
 };
-function new$5(message) {
-  if (message instanceof GotoMainMenu) {
-    return [new MainMenu(new$4()), none()];
+var AIBattle = class extends CustomType {
+  constructor(model) {
+    super();
+    this.model = model;
+  }
+};
+function new$6(message) {
+  if (message instanceof UserClickedMainMenu) {
+    return [new MainMenu(new$5()), none()];
   } else if (message instanceof NewGame) {
     let player_types = message.player_types;
     let new_game$1 = new_game(player_types.red, player_types.yellow);
@@ -6050,24 +6439,34 @@ function new$5(message) {
           return none();
         } else {
           let bot_name = $.bot_name;
-          return get_move_api(new_game$1, bot_name);
+          return get_move_api(new_game$1, bot_name, -1);
         }
       })()
     ];
   } else {
-    throw makeError("panic", "connect_4", 40, "new", "should not happen", {});
+    throw makeError("panic", "connect_4", 46, "new", "should not happen", {});
   }
 }
-function update2(model, msg) {
-  if (msg instanceof GotoMainMenu) {
-    return [new MainMenu(new$4()), none()];
+function update(model, msg) {
+  if (msg instanceof UserClickedMainMenu) {
+    return [new MainMenu(new$5()), none()];
   } else if (msg instanceof NewGame) {
-    return new$5(msg);
-  } else if (model instanceof MainMenu && msg instanceof ChooseBot) {
+    return new$6(msg);
+  } else if (model instanceof MainMenu && msg instanceof UserSelectedBot) {
     let model$1 = model.model;
     let turn = msg.t;
     let bot_name = msg.bot_name;
-    return [new MainMenu(update(model$1, turn, bot_name)), none()];
+    return [
+      new MainMenu(update_selected_bot(model$1, turn, bot_name)),
+      none()
+    ];
+  } else if (model instanceof MainMenu && msg instanceof UserEnteredNumberOfGames) {
+    let model$1 = model.model;
+    let number_of_games = msg.value;
+    return [
+      new MainMenu(update_number_of_games(model$1, number_of_games)),
+      none()
+    ];
   } else if (model instanceof Game2 && msg instanceof Move) {
     let game_model = model.model;
     let column = msg.column;
@@ -6076,30 +6475,36 @@ function update2(model, msg) {
     let $1 = get_active_player_type(updated_game);
     if ($ instanceof Continue2 && $1 instanceof AI) {
       let bot_name = $1.bot_name;
-      return [new Game2(updated_game), get_move_api(updated_game, bot_name)];
+      return [
+        new Game2(updated_game),
+        get_move_api(updated_game, bot_name, -1)
+      ];
     } else {
       return [new Game2(updated_game), none()];
     }
-  } else if (model instanceof Game2 && msg instanceof ReceivedMove) {
+  } else if (model instanceof Game2 && msg instanceof APIReceivedMove) {
     let game_model = model.model;
     let result = msg[0];
     if (!result.isOk()) {
       throw makeError(
         "let_assert",
         "connect_4",
-        68,
+        78,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: result }
       );
     }
-    let column = result[0];
+    let column = result[0][0];
     let updated_game = update_model(game_model, column);
     let $ = updated_game.game.state;
     let $1 = get_active_player_type(updated_game);
     if ($ instanceof Continue2 && $1 instanceof AI) {
       let bot_name = $1.bot_name;
-      return [new Game2(updated_game), get_move_api(updated_game, bot_name)];
+      return [
+        new Game2(updated_game),
+        get_move_api(updated_game, bot_name, -1)
+      ];
     } else {
       return [new Game2(updated_game), none()];
     }
@@ -6112,29 +6517,77 @@ function update2(model, msg) {
     let game_model = model.model;
     let updated_game = update_clear_highlighted_column(game_model);
     return [new Game2(updated_game), none()];
+  } else if (msg instanceof UserStartedAIBattle) {
+    let red = msg.red;
+    let yellow = msg.yellow;
+    let number_of_games = msg.number_of_games;
+    let new_battle = new$4(red, yellow, number_of_games);
+    return [new AIBattle(new_battle), init_get_first_moves(red, new_battle)];
+  } else if (model instanceof AIBattle && msg instanceof APIReceivedMove) {
+    let model$1 = model.model;
+    let result = msg[0];
+    if (!result.isOk()) {
+      throw makeError(
+        "let_assert",
+        "connect_4",
+        105,
+        "update",
+        "Pattern match failed, no pattern matched the value.",
+        { value: result }
+      );
+    }
+    let column = result[0][0];
+    let game_id = result[0][1];
+    let $ = map_get(model$1.games, game_id);
+    if (!$.isOk()) {
+      throw makeError(
+        "let_assert",
+        "connect_4",
+        106,
+        "update",
+        "Pattern match failed, no pattern matched the value.",
+        { value: $ }
+      );
+    }
+    let game2 = $[0];
+    let updated_game = update_model(game2, column);
+    let updated_games = new AIBattle(
+      new Model2(insert(model$1.games, game_id, updated_game))
+    );
+    let $1 = updated_game.game.state;
+    let $2 = get_active_player_type(updated_game);
+    if ($1 instanceof Continue2 && $2 instanceof AI) {
+      let bot_name = $2.bot_name;
+      return [updated_games, get_move_api(updated_game, bot_name, game_id)];
+    } else {
+      return [updated_games, none()];
+    }
   } else {
-    echo2(model, "src/connect_4.gleam", 92);
-    echo2(msg, "src/connect_4.gleam", 93);
-    throw makeError("panic", "connect_4", 94, "update", "impossible state", {});
+    echo2(model, "src/connect_4.gleam", 120);
+    echo2(msg, "src/connect_4.gleam", 121);
+    throw makeError("panic", "connect_4", 122, "update", "impossible state", {});
   }
 }
-function view3(model) {
+function view4(model) {
   if (model instanceof MainMenu) {
     let model$1 = model.model;
-    return view2(model$1);
-  } else {
+    return view3(model$1);
+  } else if (model instanceof Game2) {
     let game_model = model.model;
-    return view(game_model);
+    return view2(game_model);
+  } else {
+    let model$1 = model.model;
+    return view(model$1);
   }
 }
 function main() {
-  let app = application(new$5, update2, view3);
-  let $ = start2(app, "#app", new GotoMainMenu());
+  let app = application(new$6, update, view4);
+  let $ = start2(app, "#app", new UserClickedMainMenu());
   if (!$.isOk()) {
     throw makeError(
       "let_assert",
       "connect_4",
-      17,
+      22,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
@@ -6142,11 +6595,11 @@ function main() {
   }
   return void 0;
 }
-function echo2(value, file2, line) {
+function echo2(value3, file2, line) {
   const grey = "\x1B[90m";
   const reset_color = "\x1B[39m";
   const file_line = `${file2}:${line}`;
-  const string_value = echo$inspect2(value);
+  const string_value = echo$inspect2(value3);
   if (typeof process === "object" && process.stderr?.write) {
     const string5 = `${grey}${file_line}${reset_color}
 ${string_value}
@@ -6162,7 +6615,7 @@ ${string_value}
 ${string_value}`;
     console.log(string5);
   }
-  return value;
+  return value3;
 }
 function echo$inspectString2(str) {
   let new_str = '"';
@@ -6193,22 +6646,22 @@ function echo$inspectDict2(map7) {
   let body = "dict.from_list([";
   let first2 = true;
   let key_value_pairs = [];
-  map7.forEach((value, key) => {
-    key_value_pairs.push([key, value]);
+  map7.forEach((value3, key) => {
+    key_value_pairs.push([key, value3]);
   });
   key_value_pairs.sort();
-  key_value_pairs.forEach(([key, value]) => {
+  key_value_pairs.forEach(([key, value3]) => {
     if (!first2)
       body = body + ", ";
-    body = body + "#(" + echo$inspect2(key) + ", " + echo$inspect2(value) + ")";
+    body = body + "#(" + echo$inspect2(key) + ", " + echo$inspect2(value3) + ")";
     first2 = false;
   });
   return body + "])";
 }
 function echo$inspectCustomType2(record) {
   const props = Object.keys(record).map((label2) => {
-    const value = echo$inspect2(record[label2]);
-    return isNaN(parseInt(label2)) ? `${label2}: ${value}` : value;
+    const value3 = echo$inspect2(record[label2]);
+    return isNaN(parseInt(label2)) ? `${label2}: ${value3}` : value3;
   }).join(", ");
   return props ? `${record.constructor.name}(${props})` : record.constructor.name;
 }
@@ -6279,9 +6732,9 @@ function echo$inspectBitArray2(bitArray) {
     return `<<${Array.from(alignedBytes.rawBuffer).join(", ")}>>`;
   }
 }
-function echo$isDict2(value) {
+function echo$isDict2(value3) {
   try {
-    return value instanceof Dict;
+    return value3 instanceof Dict;
   } catch {
     return false;
   }

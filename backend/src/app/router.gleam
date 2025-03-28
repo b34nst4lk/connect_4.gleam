@@ -45,10 +45,11 @@ pub fn handle_request(req: Request) -> Response {
   }
 }
 
-pub fn game_model_decoder() -> decode.Decoder(Game) {
+pub fn game_model_decoder() -> decode.Decoder(#(Game, Int)) {
   use red <- decode.field("red", decode.int)
   use yellow <- decode.field("yellow", decode.int)
   use active <- decode.field("play_for", decode.string)
+  use game_id <- decode.optional_field("game_id", -1, decode.int)
   // The following bitboard creation should succeed
   let assert Ok(empty_board) = b.new(connect_4_width, connect_4_height)
   let x_bitboard = b.Bitboard(connect_4_width, connect_4_height, red)
@@ -59,21 +60,30 @@ pub fn game_model_decoder() -> decode.Decoder(Game) {
 
   case string.lowercase(active) {
     "red" ->
-      decode.success(Game(
-        red_player,
-        yellow_player,
-        check_game_state(red_player, yellow_player),
+      decode.success(#(
+        Game(
+          red_player,
+          yellow_player,
+          check_game_state(red_player, yellow_player),
+        ),
+        game_id,
       ))
     "yellow" ->
-      decode.success(Game(
-        yellow_player,
-        red_player,
-        check_game_state(yellow_player, red_player),
+      decode.success(#(
+        Game(
+          yellow_player,
+          red_player,
+          check_game_state(yellow_player, red_player),
+        ),
+        game_id,
       ))
 
     _ -> {
       decode.failure(
-        Game(Player(Red, empty_board), Player(Yellow, empty_board), Continue),
+        #(
+          Game(Player(Red, empty_board), Player(Yellow, empty_board), Continue),
+          game_id,
+        ),
         "GameModel",
       )
     }
@@ -82,11 +92,13 @@ pub fn game_model_decoder() -> decode.Decoder(Game) {
 
 fn handle_move(req: Request, depth: Int) -> Response {
   use req_body <- wisp.require_json(req)
-  let assert Ok(game) = decode.run(req_body, game_model_decoder())
+  let assert Ok(#(game, game_id)) = decode.run(req_body, game_model_decoder())
   let move = minimax(game, depth)
 
   let resp_body =
-    [#("move", json.int(move))] |> json.object |> json.to_string_tree
+    [#("move", json.int(move)), #("game_id", json.int(game_id))]
+    |> json.object
+    |> json.to_string_tree
 
   wisp.json_response(resp_body, 200)
 }
@@ -139,7 +151,7 @@ fn minimax_iter(
         Win(winner) ->
           case winner == player {
             True -> score(has_game_ended, depth)
-            False -> -score(has_game_ended, depth)
+            False -> -score(has_game_ended, depth) - 100
           }
         Draw -> 0
         Continue ->

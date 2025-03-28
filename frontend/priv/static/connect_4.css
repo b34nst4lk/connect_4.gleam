@@ -18,6 +18,13 @@
     grid-template-columns: repeat(7, 1fr);
 }
 
+.ai-battle {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap:1%
+}
+
+
 .cell {
     aspect-ratio: 1/1;
     background-color: blue;

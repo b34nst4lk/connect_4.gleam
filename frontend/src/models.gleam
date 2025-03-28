@@ -4,7 +4,7 @@ import lustre_http
 
 import shared.{
   type Game, type GameState, type Turn, Continue, Game, Player, Red, Yellow,
-  connect_4_height, connect_4_width,
+  connect_4_height, connect_4_width, update_game,
 }
 
 import bibi/bitboard as b
@@ -50,16 +50,45 @@ pub fn new_game(red: PlayerType, yellow: PlayerType) -> GameModel {
   )
 }
 
+pub fn update_model(model: GameModel, column: Int) -> GameModel {
+  let #(updated_game, last_cell_updated) = update_game(model.game, column)
+  let has_game_changed = updated_game != model.game
+  case has_game_changed {
+    True ->
+      GameModel(
+        ..model,
+        game: updated_game,
+        move_counter: model.move_counter + 1,
+        move_history: dict.insert(
+          model.move_history,
+          last_cell_updated,
+          DebugLog(
+            model.move_counter,
+            model.game.active.turn,
+            updated_game.state,
+          ),
+        ),
+        highlight_column: model.highlight_column,
+      )
+    False -> model
+  }
+}
+
 pub type Message {
   // Main menu
-  GotoMainMenu
-  SetupAIvsAI
-  ChooseBot(t: Turn, bot_name: String)
+  UserClickedMainMenu
+  UserSelectedBot(t: Turn, bot_name: String)
+  UserEnteredNumberOfGames(value: String)
 
   // Game
   NewGame(player_types: PlayerTypes)
   Move(column: Int)
-  ReceivedMove(Result(Int, lustre_http.HttpError))
   HighlightColumn(column: Int)
   UnhighlightColumn
+
+  // AI battle
+  UserStartedAIBattle(red: String, yellow: String, number_of_games: String)
+
+  // APIs
+  APIReceivedMove(Result(#(Int, Int), lustre_http.HttpError))
 }

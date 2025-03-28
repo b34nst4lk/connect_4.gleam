@@ -1,7 +1,5 @@
 import gleam/dict
-import gleam/dynamic/decode
 import gleam/int
-import gleam/json
 import gleam/list
 import gleam/order
 import gleam/set
@@ -10,77 +8,19 @@ import lustre/attribute
 import lustre/element
 import lustre/element/html
 import lustre/event
-import lustre_http
 
 import bibi/bitboard as b
 
 import shared.{
   type Turn, Continue, Draw, Red, Win, Yellow, connect_4_height, connect_4_width,
-  update_game,
 }
 
 import models.{
-  type DebugLog, type GameModel, DebugLog, GameModel, GotoMainMenu,
-  HighlightColumn, Human, Move, NewGame, ReceivedMove, UnhighlightColumn,
-  get_active_player_type,
+  type DebugLog, type GameModel, DebugLog, GameModel, HighlightColumn, Human,
+  Move, NewGame, UnhighlightColumn, UserClickedMainMenu, get_active_player_type,
 }
 
 // Update
-
-pub fn get_move_api(model: GameModel, bot_name: String) {
-  let url = "http://localhost:8000/" <> bot_name
-  // prepare json body
-  let req_body =
-    case model.game.active.turn {
-      Red -> [
-        #("red", json.int(model.game.active.board.val)),
-        #("yellow", json.int(model.game.inactive.board.val)),
-        #("play_for", json.string("red")),
-      ]
-      Yellow -> [
-        #("red", json.int(model.game.inactive.board.val)),
-        #("yellow", json.int(model.game.active.board.val)),
-        #("play_for", json.string("yellow")),
-      ]
-    }
-    |> json.object
-
-  // prepare decoder
-  let decoder = {
-    use move <- decode.field("move", decode.int)
-    decode.success(move)
-  }
-  lustre_http.post(
-    url,
-    req_body,
-    lustre_http.expect_json(decoder, ReceivedMove),
-  )
-}
-
-pub fn update_model(model: GameModel, column: Int) -> GameModel {
-  let #(updated_game, last_cell_updated) = update_game(model.game, column)
-  let has_game_changed = updated_game != model.game
-  case has_game_changed {
-    True ->
-      GameModel(
-        ..model,
-        game: updated_game,
-        move_counter: model.move_counter + 1,
-        move_history: dict.insert(
-          model.move_history,
-          last_cell_updated,
-          DebugLog(
-            model.move_counter,
-            model.game.active.turn,
-            updated_game.state,
-          ),
-        ),
-        highlight_column: model.highlight_column,
-      )
-    False -> model
-  }
-}
-
 pub fn update_highlighted_column(model: GameModel, column: Int) {
   GameModel(..model, highlight_column: column)
 }
@@ -127,7 +67,9 @@ fn header(model: GameModel) -> element.Element(_) {
       html.button([event.on_click(NewGame(model.player_types))], [
         element.text("Restart"),
       ]),
-      html.button([event.on_click(GotoMainMenu)], [element.text("Main menu")]),
+      html.button([event.on_click(UserClickedMainMenu)], [
+        element.text("Main menu"),
+      ]),
     ]),
   ])
 }
