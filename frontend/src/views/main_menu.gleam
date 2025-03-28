@@ -42,7 +42,7 @@ pub fn update_selected_bot(model: Model, turn: Turn, bot_name: String) -> Model 
 }
 
 pub fn update_number_of_games(model: Model, number_of_games: String) {
-  Model(..model, number_of_games:)
+  Model(..model, number_of_games: number_of_games)
 }
 
 // View
