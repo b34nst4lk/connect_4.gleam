@@ -75,8 +75,7 @@ fn check_win(board: b.Bitboard) -> Bool {
 
 fn check_draw(active: Player, inactive: Player) -> Bool {
   let assert Ok(board) = b.bitboard_or(active.board, inactive.board)
-  let full_mask = b.full_mask(active.board)
-  full_mask == board
+  set.is_empty(available_moves(board))
 }
 
 pub fn check_game_state(active: Player, inactive: Player) -> GameState {

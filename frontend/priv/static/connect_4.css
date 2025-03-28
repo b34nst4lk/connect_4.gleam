@@ -1,7 +1,30 @@
+.vstack {
+    display:flex;
+    flex-direction: column;
+}
+
+.hstack {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+
+.flex-1 {
+    flex: 1
+}
+
 .board {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
 }
+
+.ai-battle {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap:1%
+}
+
 
 .cell {
     aspect-ratio: 1/1;

@@ -1,7 +1,5 @@
-import gleam/dict.{type Dict}
-import gleam/dynamic/decode
+import gleam/dict
 import gleam/int
-import gleam/json
 import gleam/list
 import gleam/order
 import gleam/set
@@ -10,139 +8,52 @@ import lustre/attribute
 import lustre/element
 import lustre/element/html
 import lustre/event
-import lustre_http
 
 import bibi/bitboard as b
 
 import shared.{
-  type Game, type GameState, type Player, type Turn, Continue, Draw, Game,
-  Player, Red, Win, Yellow, connect_4_height, connect_4_width, update_game,
+  type Turn, Continue, Draw, Red, Win, Yellow, connect_4_height, connect_4_width,
 }
 
-import messages as msg
-
-// model
-pub type DebugLog {
-  DebugLog(move_count: Int, turn: Turn, state: GameState)
-}
-
-pub type PlayerType {
-  Human
-  AI
-}
-
-pub type PlayerTypes {
-  PlayerTypes(red: PlayerType, yellow: PlayerType)
-}
-
-pub type Model {
-  Model(
-    game: Game,
-    player_types: PlayerTypes,
-    move_counter: Int,
-    move_history: Dict(Int, DebugLog),
-    highlight_column: Int,
-  )
-}
-
-pub fn get_active_player_type(model: Model) -> PlayerType {
-  case model.game.active.turn {
-    Red -> model.player_types.red
-    Yellow -> model.player_types.yellow
-  }
-}
-
-pub fn new(red: PlayerType, yellow: PlayerType) -> Model {
-  let assert Ok(bitboard) = b.new(connect_4_width, connect_4_height)
-  Model(
-    Game(Player(Red, bitboard), Player(Yellow, bitboard), Continue),
-    PlayerTypes(red, yellow),
-    0,
-    dict.new(),
-    -1,
-  )
+import models.{
+  type DebugLog, type GameModel, DebugLog, GameModel, HighlightColumn, Human,
+  Move, NewGame, UnhighlightColumn, UserClickedMainMenu, get_active_player_type,
 }
 
 // Update
-
-pub fn get_move_api(model: Model) {
-  let url = "http://localhost:8000/move"
-  // prepare json body
-  let req_body =
-    case model.game.active.turn {
-      Red -> [
-        #("red", json.int(model.game.active.board.val)),
-        #("yellow", json.int(model.game.inactive.board.val)),
-        #("play_for", json.string("red")),
-      ]
-      Yellow -> [
-        #("red", json.int(model.game.inactive.board.val)),
-        #("yellow", json.int(model.game.active.board.val)),
-        #("play_for", json.string("yellow")),
-      ]
-    }
-    |> json.object
-
-  // prepare decoder
-  let decoder = {
-    use move <- decode.field("move", decode.int)
-    decode.success(move)
-  }
-  lustre_http.post(
-    url,
-    req_body,
-    lustre_http.expect_json(decoder, msg.ReceivedMove),
-  )
+pub fn update_highlighted_column(model: GameModel, column: Int) {
+  GameModel(..model, highlight_column: column)
 }
 
-pub fn update_model(model: Model, column: Int) -> Model {
-  let #(updated_game, last_cell_updated) = update_game(model.game, column)
-  let has_game_changed = updated_game != model.game
-  case has_game_changed {
-    True ->
-      Model(
-        ..model,
-        game: updated_game,
-        move_counter: model.move_counter + 1,
-        move_history: dict.insert(
-          model.move_history,
-          last_cell_updated,
-          DebugLog(
-            model.move_counter,
-            model.game.active.turn,
-            updated_game.state,
-          ),
-        ),
-        highlight_column: model.highlight_column,
-      )
-    False -> model
-  }
-}
-
-pub fn update_highlighted_column(model: Model, column: Int) {
-  Model(..model, highlight_column: column)
-}
-
-pub fn update_clear_highlighted_column(model: Model) {
-  Model(..model, highlight_column: -1)
+pub fn update_clear_highlighted_column(model: GameModel) {
+  GameModel(..model, highlight_column: -1)
 }
 
 // View
-pub fn view(model: Model) -> element.Element(_) {
+pub fn view(model: GameModel) -> element.Element(_) {
   html.div([attribute.class("game")], [
-    html.h1([], [element.text("VS AI")]),
     header(model),
+    game_details(model),
     board(model),
     debug_log(model),
   ])
 }
 
-fn header(model: Model) -> element.Element(_) {
-  let class = case model.game.state {
-    Win(_) -> "win"
-    Draw -> "draw"
-    Continue -> "continue"
-  }
+fn header(model: GameModel) -> element.Element(_) {
+  html.div([attribute.class("hstack")], [
+    html.h1([], [element.text("Connect 4 LOL")]),
+    html.div([attribute.class("hstack")], [
+      html.button([event.on_click(NewGame(model.player_types))], [
+        element.text("Restart"),
+      ]),
+      html.button([event.on_click(UserClickedMainMenu)], [
+        element.text("Main menu"),
+      ]),
+    ]),
+  ])
+}
+
+fn game_details(model: GameModel) -> element.Element(_) {
   let text = case model.game.state {
     Win(winner) ->
       "Winner is "
@@ -159,15 +70,7 @@ fn header(model: Model) -> element.Element(_) {
         Yellow -> "Yellow's turn"
       }
   }
-  html.div([attribute.class("header" <> " " <> class)], [
-    element.text(text),
-    html.div([], [
-      html.button([event.on_click(msg.NewOnlineGame)], [element.text("Restart")]),
-      html.button([event.on_click(msg.GotoMainMenu)], [
-        element.text("Main menu"),
-      ]),
-    ]),
-  ])
+  element.text(text)
 }
 
 fn convert_bitboard_to_set(bitboard: b.Bitboard) {
@@ -181,7 +84,7 @@ fn turn_to_color(t: Turn) -> String {
   }
 }
 
-pub fn board(model: Model) -> element.Element(_) {
+pub fn board(model: GameModel) -> element.Element(_) {
   let active_board = convert_bitboard_to_set(model.game.active.board)
   let inactive_board = convert_bitboard_to_set(model.game.inactive.board)
   let board_rows =
@@ -205,8 +108,8 @@ pub fn board(model: Model) -> element.Element(_) {
           }
           let cell_attributes = [
             attribute.class("cell"),
-            event.on_mouse_over(msg.HighlightColumn(j)),
-            event.on_mouse_leave(msg.UnhighlightColumn),
+            event.on_mouse_over(HighlightColumn(j)),
+            event.on_mouse_leave(UnhighlightColumn),
           ]
           let cell_attributes = case model.highlight_column == j {
             True -> list.append(cell_attributes, [attribute.class("highlight")])
@@ -216,7 +119,7 @@ pub fn board(model: Model) -> element.Element(_) {
             get_active_player_type(model) == Human
             && model.game.state == Continue
           {
-            True -> list.append(cell_attributes, [event.on_click(msg.Move(j))])
+            True -> list.append(cell_attributes, [event.on_click(Move(j))])
             False -> cell_attributes
           }
           html.div(cell_attributes, [
@@ -250,7 +153,7 @@ fn format_log(square: Int, log: DebugLog) {
   move_count <> " | " <> square <> " | " <> turn <> " | " <> state
 }
 
-fn debug_log(model: Model) -> element.Element(_) {
+fn debug_log(model: GameModel) -> element.Element(_) {
   let logs =
     model.move_history
     |> dict.to_list

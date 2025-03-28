@@ -58,6 +58,6 @@ pub fn game_model_decoder_test() {
         ]),
       )
     let assert Ok(decoded) = decode.run(undecoded, r.game_model_decoder())
-    should.equal(decoded, test_case.3)
+    should.equal(decoded.0, test_case.3)
   })
 }
