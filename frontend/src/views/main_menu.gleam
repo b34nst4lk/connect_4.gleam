@@ -90,10 +90,11 @@ fn ai_match_config_pop_up(model: Model) -> element.Element(_) {
 fn player_setup(turn: Turn, selected: String) {
   html.form([attribute.class("flex-1")], [
     html.fieldset([attribute.class("vstack")], [
-      html.legend([], [element.text("UserSelected a bot:")]),
+      html.legend([], [element.text("Select a bot:")]),
       bot_radio_button("minimax/1", selected, turn),
       bot_radio_button("minimax/3", selected, turn),
       bot_radio_button("minimax/5", selected, turn),
+      bot_radio_button("minimax/6", selected, turn),
     ]),
   ])
 }

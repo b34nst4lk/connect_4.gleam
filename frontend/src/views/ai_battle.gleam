@@ -8,15 +8,23 @@ import lustre/attribute
 import lustre/effect
 import lustre/element
 import lustre/element/html
+import lustre/event
 import shared.{type Turn, Red, Yellow, connect_4_height, connect_4_width}
 
 import backend_api.{get_move_api}
-import models.{type GameModel, AI, new_game}
+import models.{
+  type GameModel, AI, UserClickedMainMenu, UserStartedAIBattle, new_game,
+}
 
 // Model
 
 pub type Model {
-  Model(games: Dict(Int, GameModel))
+  Model(
+    games: Dict(Int, GameModel),
+    red: String,
+    yellow: String,
+    number_of_games: Int,
+  )
 }
 
 pub fn new(red: String, yellow: String, number_of_games: String) -> Model {
@@ -25,7 +33,7 @@ pub fn new(red: String, yellow: String, number_of_games: String) -> Model {
   |> list.fold(dict.new(), fn(acc, i) {
     dict.insert(acc, i, new_game(AI(red), AI(yellow)))
   })
-  |> Model
+  |> Model(red, yellow, number_of_games)
 }
 
 pub fn init_get_first_moves(red: String, model: Model) {
@@ -40,17 +48,40 @@ pub fn init_get_first_moves(red: String, model: Model) {
 
 // View
 pub fn view(model: Model) {
-  html.div([attribute.class("ai-battle")], games(model))
+  html.div([], [header(model), games(model)])
+}
+
+fn header(model: Model) -> element.Element(_) {
+  html.div([attribute.class("hstack")], [
+    html.h1([], [element.text("Connect 4 LOL")]),
+    html.div([attribute.class("hstack")], [
+      html.button(
+        [
+          event.on_click(UserStartedAIBattle(
+            model.red,
+            model.yellow,
+            int.to_string(model.number_of_games),
+          )),
+        ],
+        [element.text("Restart")],
+      ),
+      html.button([event.on_click(UserClickedMainMenu)], [
+        element.text("Main menu"),
+      ]),
+    ]),
+  ])
 }
 
 fn games(model: Model) {
-  model.games
-  |> dict.to_list
-  |> list.sort(fn(a, b) { int.compare(a.0, b.0) })
-  |> list.map(fn(game_tuple) {
-    let #(game_id, g) = game_tuple
-    game(g, game_id)
-  })
+  let all_games =
+    model.games
+    |> dict.to_list
+    |> list.sort(fn(a, b) { int.compare(a.0, b.0) })
+    |> list.map(fn(game_tuple) {
+      let #(game_id, g) = game_tuple
+      game(g, game_id)
+    })
+  html.div([attribute.class("ai-battle")], all_games)
 }
 
 fn game(g: GameModel, game_id: Int) -> element.Element(_) {

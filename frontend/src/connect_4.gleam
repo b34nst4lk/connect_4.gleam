@@ -61,6 +61,7 @@ fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
       MainMenu(mm.update_number_of_games(model, number_of_games)),
       effect.none(),
     )
+
     // Game move updates
     Game(game_model), Move(column) -> {
       let updated_game = update_model(game_model, column)
@@ -87,6 +88,7 @@ fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
         _, _ -> #(Game(updated_game), effect.none())
       }
     }
+
     // Column highlights
     Game(game_model), HighlightColumn(column) -> {
       let updated_game = g.update_highlighted_column(game_model, column)
@@ -96,6 +98,7 @@ fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
       let updated_game = g.update_clear_highlighted_column(game_model)
       #(Game(updated_game), effect.none())
     }
+
     // AI Battle
     _, UserStartedAIBattle(red, yellow, number_of_games) -> {
       let new_battle = ai.new(red, yellow, number_of_games)
@@ -106,7 +109,12 @@ fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
       let assert Ok(game) = dict.get(model.games, game_id)
       let updated_game = update_model(game, column)
       let updated_games =
-        AIBattle(ai.Model(dict.insert(model.games, game_id, updated_game)))
+        AIBattle(
+          ai.Model(
+            ..model,
+            games: dict.insert(model.games, game_id, updated_game),
+          ),
+        )
       case updated_game.game.state, get_active_player_type(updated_game) {
         Continue, AI(bot_name) -> #(
           updated_games,
@@ -115,6 +123,7 @@ fn update(model: Model, msg: Message) -> #(Model, effect.Effect(Message)) {
         _, _ -> #(updated_games, effect.none())
       }
     }
+
     // Unhandled/impossible states
     _, _ -> {
       echo model

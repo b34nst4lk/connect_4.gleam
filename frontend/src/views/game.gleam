@@ -32,19 +32,28 @@ pub fn update_clear_highlighted_column(model: GameModel) {
 // View
 pub fn view(model: GameModel) -> element.Element(_) {
   html.div([attribute.class("game")], [
-    html.h1([], [element.text("Connect 4 LOL")]),
     header(model),
+    game_details(model),
     board(model),
     debug_log(model),
   ])
 }
 
 fn header(model: GameModel) -> element.Element(_) {
-  let class = case model.game.state {
-    Win(_) -> "win"
-    Draw -> "draw"
-    Continue -> "continue"
-  }
+  html.div([attribute.class("hstack")], [
+    html.h1([], [element.text("Connect 4 LOL")]),
+    html.div([attribute.class("hstack")], [
+      html.button([event.on_click(NewGame(model.player_types))], [
+        element.text("Restart"),
+      ]),
+      html.button([event.on_click(UserClickedMainMenu)], [
+        element.text("Main menu"),
+      ]),
+    ]),
+  ])
+}
+
+fn game_details(model: GameModel) -> element.Element(_) {
   let text = case model.game.state {
     Win(winner) ->
       "Winner is "
@@ -61,17 +70,7 @@ fn header(model: GameModel) -> element.Element(_) {
         Yellow -> "Yellow's turn"
       }
   }
-  html.div([attribute.class("header" <> " " <> class)], [
-    element.text(text),
-    html.div([], [
-      html.button([event.on_click(NewGame(model.player_types))], [
-        element.text("Restart"),
-      ]),
-      html.button([event.on_click(UserClickedMainMenu)], [
-        element.text("Main menu"),
-      ]),
-    ]),
-  ])
+  element.text(text)
 }
 
 fn convert_bitboard_to_set(bitboard: b.Bitboard) {
